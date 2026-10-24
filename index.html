@@ -94,6 +94,7 @@
           <label class="campo"><span><b class="paso" aria-hidden="true">3</b> Fecha de lectura (fin)</span><input name="fin" type="date" required></label>
           <label class="campo"><span><b class="paso" aria-hidden="true">4</b> Consumo del periodo (kWh)</span><input name="consumoKwh" type="number" min="0" step="any" inputmode="decimal" required></label>
           <label class="campo"><span><b class="paso" aria-hidden="true">5</b> Meta de consumo (kWh por día)</span><input name="metaDiaria" type="number" min="0" step="any" inputmode="decimal" required></label>
+          <label class="campo"><span>Tarifa del kWh (opcional)</span><input name="tarifaKwh" type="number" min="0" step="any" inputmode="decimal" placeholder="En la factura: Consumo activa, Tarifa ($/kWh)"></label>
         </div>
 
         <details class="ayuda-meta">
@@ -160,10 +161,23 @@
           <li>El CSV del ranking trae los datos de entrada y los resultados: se puede recalcular en una hoja de cálculo.</li>
           <li>El motor de cálculo (<code>js/meta.js</code>) tiene pruebas automáticas: <code>node --test</code>.</li>
         </ul>
+        <h2>6. El valor en pesos (estimado)</h2>
+        <p>Con la tarifa de la factura ($/kWh) calculamos el valor de los kWh ahorrados o excedidos: <span class="formula">(meta del ciclo − consumo) × tarifa</span></p>
+        <p>La regla oficial del bono y del recargo en pesos todavía no está publicada. Mientras tanto, la Cámara fija aquí sus porcentajes y el tablero los muestra como <b>estimados</b>:</p>
+        <ul>
+          <li><b>Bono</b>: kWh por debajo de la meta × tarifa × % de bono. Solo en zona de ahorro.</li>
+          <li><b>Recargo</b>: kWh por encima del 110 % de la meta × tarifa × % de recargo. Solo en zona de recargo.</li>
+        </ul>
+        <form id="form-parametros" class="grid2 form-parametros" novalidate>
+          <label class="campo"><span>% de bono</span><input name="pctBono" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="Sin definir"></label>
+          <label class="campo"><span>% de recargo</span><input name="pctRecargo" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="Sin definir"></label>
+          <div class="fila"><button type="submit" class="btn btn-sec">Guardar porcentajes</button><span id="estado-parametros" class="nota" aria-live="polite"></span></div>
+        </form>
+        <p class="nota">Los porcentajes se guardan en este navegador.</p>
         <h2>Lo que todavía no hace</h2>
         <ul>
           <li>No lee la factura sola: hay que digitar los datos.</li>
-          <li>No calcula el valor del bono o del recargo en pesos.</li>
+          <li>El bono y el recargo en pesos son estimados: falta la regla oficial con sus porcentajes.</li>
           <li>Los datos viven en este navegador. Para usarlo con empresas reales hace falta un servidor y la verificación de la factura por la Cámara.</li>
         </ul>
       </div>

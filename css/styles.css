@@ -269,6 +269,23 @@ textarea { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-s
 .escenario.previa .e3d .flota { transition: left .5s cubic-bezier(.2, .8, .2, 1); }
 .previa-mensajes:empty { display: none; }
 
+/* Herramientas del tablero: proyección del ciclo en curso y consejos por sector */
+.escenario-texto .alerta-margen { margin: 0; padding: 10px 14px; border-radius: var(--radio-campo); background: #fbf1dc; color: #6b4600; font-weight: 700; }
+.herramientas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 32px; align-items: start; }
+.herramientas h2 { margin-top: 0; }
+.grid-proyeccion { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.grid-proyeccion .campo:last-child { grid-column: 1 / -1; }
+.proyeccion-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0 20px; margin-top: 20px; border-top: 1px solid var(--borde); }
+.proyeccion-cifras .dato b { font-size: 32px; }
+.alerta-proyeccion { margin: 16px 0 0; padding: 12px 16px; border-radius: var(--radio-campo); font-weight: 600; }
+.alerta-proyeccion.ahorro { background: var(--ahorro-bg); color: var(--ahorro); }
+.alerta-proyeccion.segura { background: var(--segura-bg); color: var(--segura); }
+.alerta-proyeccion.recargo { background: var(--recargo-bg); color: var(--recargo); }
+.consejos-sector ol { margin: 8px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; }
+.consejos-sector li::marker { font-weight: 900; color: var(--acento); }
+.form-parametros { margin: 16px 0 8px; align-items: end; }
+.form-parametros .fila { grid-column: 1 / -1; margin-top: 0; }
+
 /* Ranking en 3D: ciudad de empresas y podios por tamaño */
 .resumen-ciudad { margin-bottom: 32px; }
 .pct-3d.total { font-size: clamp(88px, 11vw, 150px); }
@@ -321,7 +338,8 @@ tr.top1 .puesto { color: var(--ahorro); }
   .e3d.mini { zoom: .5; margin-top: 56px; }
   .e3d.factura-3d { flex-basis: auto; height: 400px; margin: 0 auto; }
   .orbe { display: none; }
-  .grid2, .ranking { grid-template-columns: 1fr; }
+  .grid2, .ranking, .grid-proyeccion { grid-template-columns: 1fr; }
+  .herramientas { grid-template-columns: 1fr; }
   .resultado { grid-template-columns: 1fr; gap: 12px; }
   .pct { font-size: 72px; }
   .datos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }

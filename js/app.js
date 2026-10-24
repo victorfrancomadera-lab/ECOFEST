@@ -10,6 +10,49 @@
     segura: 'Está en zona segura: no paga extra. Para llegar al bono, suba el aire a 24 °C y apague equipos al cerrar.',
     recargo: 'Se pasó de la meta: va a pagar recargo. Pida una visita técnica y revise primero aires acondicionados y refrigeración.'
   };
+  // Consejos por sector: medidas sencillas que no tocan la operación crítica de cada negocio.
+  var CONSEJOS_SECTOR = {
+    Comercio: [
+      'Avisos y vitrinas con bombillos LED y un temporizador que los apague al cerrar.',
+      'Aire acondicionado en 24 °C con la puerta cerrada; una cortina de aire si la puerta pasa abierta.',
+      'Multitomas con interruptor para apagar de verdad cajas, pantallas y cargadores en la noche.'
+    ],
+    Alimentos: [
+      'Neveras y congeladores lejos del horno y del sol, con los empaques de las puertas en buen estado.',
+      'Limpie cada mes la rejilla de atrás de las neveras: si está sucia, el motor trabaja de más.',
+      'Hornos y planchas eléctricas a carga completa y sin precalentar más de lo necesario.'
+    ],
+    Servicios: [
+      'Computadores en suspensión a los 10 minutos sin uso y apagados al cerrar.',
+      'Aire acondicionado en 24 °C y filtros limpios cada tres meses.',
+      'Lavadoras, secadoras y equipos de alto consumo siempre a carga completa.'
+    ],
+    Industria: [
+      'Busque fugas de aire comprimido y apague el compresor cuando no hay producción.',
+      'Evite arrancar todos los motores grandes al mismo tiempo y mantenga su lubricación al día.',
+      'Bodegas con iluminación LED y sensores de movimiento.'
+    ],
+    Turismo: [
+      'Tarjeta o interruptor maestro que apague la habitación cuando el huésped sale.',
+      'Aire apagado en habitaciones desocupadas y en 24 °C en las ocupadas.',
+      'Lavandería a carga completa y calentadores de agua revisados para que no trabajen de más.'
+    ],
+    Salud: [
+      'No toque equipos médicos ni la cadena de frío de vacunas y medicamentos: ahorre en áreas administrativas.',
+      'Aire y luces apagados en consultorios desocupados.',
+      'Pasillos y baños con LED y sensores de movimiento.'
+    ],
+    'Educación': [
+      'Un responsable por bloque que apague aires y luces en salones vacíos.',
+      'Salas de cómputo apagadas al final de la jornada, no en reposo.',
+      'Aproveche la luz natural y use ventiladores donde el aire no sea necesario.'
+    ],
+    Otro: [
+      'Aire acondicionado en 24 °C: cada grado menos sube el consumo.',
+      'Apague luces y equipos al cerrar; los equipos en reposo también consumen.',
+      'Revise qué equipo gasta más (aires, neveras, motores) y empiece por ahí.'
+    ]
+  };
   var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
   var registros = cargar();
@@ -26,6 +69,17 @@
     try { localStorage.setItem(CLAVE, JSON.stringify(registros)); } catch (e) { /* modo privado */ }
   }
 
+  // Porcentajes del bono y del recargo: los fija la Cámara en "Cómo se mide" mientras no haya regla oficial.
+  var CLAVE_PARAMETROS = 'medidor-pacto-parametros-v1';
+  function cargarParametros() {
+    try {
+      var p = JSON.parse(localStorage.getItem(CLAVE_PARAMETROS));
+      if (p && typeof p === 'object') return { pctBono: Number(p.pctBono) || 0, pctRecargo: Number(p.pctRecargo) || 0 };
+    } catch (e) { /* sin almacenamiento */ }
+    return { pctBono: 0, pctRecargo: 0 };
+  }
+  var parametros = cargarParametros();
+
   function num(n, dec) {
     return Number(n).toLocaleString('es-CO', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
   }
@@ -34,6 +88,7 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  function pesos(n) { return (n < 0 ? '−$' : '$') + num(Math.abs(n)); }
   function nombreCiclo(c) {
     var p = String(c).split('-');
     return (MESES[Number(p[1]) - 1] || c) + ' ' + p[0];
@@ -147,6 +202,29 @@
     return ['Va a pagar recargo.', 'Está ' + puntos(p - 110) + ' por encima del 110\u00a0% de su meta.'];
   }
 
+  // Alerta cuando el resultado está a 3 puntos o menos de cambiar de zona.
+  function alertaMargen(res) {
+    var p = res.porcentaje;
+    if (res.zona === 'ahorro' && p >= Meta.LIMITE_AHORRO - 3) return 'Alerta: está a ' + puntos(Meta.LIMITE_AHORRO - p) + ' de perder el bono.';
+    if (res.zona === 'segura' && p >= Meta.LIMITE_RECARGO - 3) return 'Alerta: está a ' + puntos(Meta.LIMITE_RECARGO - p) + ' de pagar recargo.';
+    return '';
+  }
+
+  // Dato en pesos del ciclo; vacío si la factura no tiene tarifa.
+  function datoPesos(r) {
+    var v = Meta.valorEnPesos(r, parametros);
+    if (!v) return '';
+    if (v.bono) return '<div class="dato"><b>' + pesos(v.bono) + '</b><span>bono estimado (' + num(parametros.pctBono, 1) + ' % de lo ahorrado)</span></div>';
+    if (v.recargo) return '<div class="dato"><b>' + pesos(v.recargo) + '</b><span>recargo estimado (' + num(parametros.pctRecargo, 1) + ' % de lo excedido)</span></div>';
+    return '<div class="dato"><b>' + pesos(Math.abs(v.valorDiferencia)) + '</b><span>valor de los kWh ' + (v.valorDiferencia >= 0 ? 'ahorrados' : 'por encima de la meta') + ' a $' + num(v.tarifa, 2) + '/kWh</span></div>';
+  }
+  function trazaPesos(r) {
+    var v = Meta.valorEnPesos(r, parametros);
+    if (!v) return '<p>Sin tarifa: registre la tarifa ($/kWh) de la factura para ver el valor en pesos.</p>';
+    return '<p><code>' + num(v.kwhDiferencia, 1) + ' kWh × $' + num(v.tarifa, 2) + '/kWh = ' + pesos(v.valorDiferencia) + '</code>' +
+      (v.conParametros ? '' : ' · El bono y el recargo en pesos se estiman cuando la Cámara fija sus porcentajes en "Cómo se mide".') + '</p>';
+  }
+
   // El ciclo más reciente, en el escenario oscuro con la escala 3D.
   function escenarioCiclo(r) {
     var res = Meta.evaluar(r);
@@ -163,19 +241,67 @@
       '<span class="chip ' + res.zona + '">' + NOMBRE_ZONA[res.zona] + '</span></div>' +
       '<div class="escenario-cuerpo"><div class="escenario-texto">' +
       '<div class="pct-3d ' + res.zona + '">' + pctCorto(res.porcentaje) + '%</div>' +
-      '<h2 class="titular">' + t[0] + '</h2><p>' + t[1] + '</p><p>' + CONSEJO[res.zona] + '</p></div>' +
+      '<h2 class="titular">' + t[0] + '</h2><p>' + t[1] + '</p>' +
+      (alertaMargen(res) ? '<p class="alerta-margen">' + alertaMargen(res) + '</p>' : '') +
+      '<p>' + CONSEJO[res.zona] + '</p></div>' +
       escala3d(res.porcentaje) + '</div>' +
       '<div class="datos">' +
       '<div class="dato">' + ahorroTxt + '</div>' +
+      datoPesos(r) +
       '<div class="dato"><b>' + num(res.consumoDiario, 1) + ' / ' + num(r.metaDiaria, 1) + '</b><span>kWh al día, gasto contra meta</span></div>' +
       (mio ? '<div class="dato"><b>' + mio.puesto + '.º de ' + grupo.length + '</b><span>entre empresas de tamaño ' + esc(r.tamano.toLowerCase()) + '</span></div>' : '') +
       '<div class="dato"><b>' + num(r.consumoKwh) + '</b><span>kWh en la factura</span></div>' +
       '</div>' +
       '<details class="traza"><summary>Ver el cálculo</summary><p><code>(' + num(r.consumoKwh) + ' kWh ÷ ' + res.dias + ' días) ÷ ' +
       num(r.metaDiaria, 2) + ' kWh/día × 100 = ' + num(res.porcentaje, 1) + ' %</code></p>' +
+      trazaPesos(r) +
       '<p>Factura ' + esc(r.factura || 'sin número') + ' · periodo ' + esc(r.inicio) + ' a ' + esc(r.fin) +
       (r.muestra ? ' · dato de muestra' : '') + '</p></details>' +
       '</article>';
+  }
+
+  // Calculadora del ciclo en curso: con dos lecturas del medidor proyecta el cierre.
+  function proyeccionHtml(r) {
+    var hoy = new Date().toISOString().slice(0, 10);
+    var dias = Meta.evaluar(r).dias;
+    return '<section class="tarjeta proyeccion" aria-labelledby="titulo-proyeccion">' +
+      '<h2 id="titulo-proyeccion">¿Cómo va el ciclo de este mes?</h2>' +
+      '<p class="nota">Copie la lectura de su última factura y la que marca hoy el medidor. Calculamos en qué % de la meta (' + num(r.metaDiaria, 1) + ' kWh/día) cerraría y cuánto puede gastar por día para quedar en ahorro.</p>' +
+      '<form class="form-proyeccion grid-proyeccion" novalidate data-meta="' + r.metaDiaria + '">' +
+      '<label class="campo"><span>Lectura de la última factura</span><input name="lecturaAnterior" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej.: 17431"></label>' +
+      '<label class="campo"><span>Fecha de esa lectura</span><input name="fechaAnterior" type="date" value="' + esc(r.fin) + '"></label>' +
+      '<label class="campo"><span>Lectura del medidor hoy</span><input name="lecturaHoy" type="number" min="0" step="any" inputmode="decimal"></label>' +
+      '<label class="campo"><span>Fecha de hoy</span><input name="fechaHoy" type="date" value="' + hoy + '"></label>' +
+      '<label class="campo"><span>Días del ciclo</span><input name="diasCiclo" type="number" min="1" step="1" value="' + dias + '"></label>' +
+      '</form><div class="resultado-proyeccion" aria-live="polite"></div></section>';
+  }
+  function pintarProyeccion(formP) {
+    var f = new FormData(formP);
+    var meta = parseFloat(formP.dataset.meta);
+    var kwh = parseFloat(f.get('lecturaHoy')) - parseFloat(f.get('lecturaAnterior'));
+    var transcurridos = Meta.diasEntre(f.get('fechaAnterior'), f.get('fechaHoy')) - 1;
+    var diasCiclo = parseInt(f.get('diasCiclo'), 10);
+    var caja = formP.parentNode.querySelector('.resultado-proyeccion');
+    if (isNaN(kwh)) { caja.innerHTML = ''; return; }
+    if (kwh < 0) { caja.innerHTML = '<p class="mensajes err">La lectura de hoy debe ser mayor que la de la factura.</p>'; return; }
+    var p = Meta.proyectarCiclo(meta, kwh, transcurridos, diasCiclo);
+    if (!p) { caja.innerHTML = '<p class="mensajes err">Revise las fechas: hoy debe ser después de la lectura y dentro del ciclo.</p>'; return; }
+    var aviso = p.zona === 'recargo' ? 'Al ritmo actual cerraría en recargo.'
+      : p.zona === 'segura' ? 'Al ritmo actual cerraría sin bono.'
+      : p.porcentaje >= Meta.LIMITE_AHORRO - 3 ? 'Va en ahorro, pero muy cerca del límite.' : 'Va bien: al ritmo actual cerraría en ahorro.';
+    caja.innerHTML = '<div class="proyeccion-cifras">' +
+      '<div class="dato"><b class="z-' + p.zona + '">' + pctCorto(p.porcentaje) + '%</b><span>de la meta al ritmo actual</span></div>' +
+      '<div class="dato"><b>' + num(kwh, 0) + ' kWh</b><span>en ' + transcurridos + ' días (' + num(p.consumoDiario, 1) + ' al día)</span></div>' +
+      (p.diasRestantes ? '<div class="dato"><b>' + num(p.maxDiarioAhorro, 1) + ' kWh/día</b><span>máximo los próximos ' + p.diasRestantes + ' días para cerrar en ahorro</span></div>' : '') +
+      '</div><p class="alerta-proyeccion ' + p.zona + '">' + aviso +
+      (p.diasRestantes && p.maxDiarioAhorro === 0 ? ' Ya no alcanza para el bono este ciclo; para no pagar recargo, gaste máximo ' + num(p.maxDiarioSinRecargo, 1) + ' kWh al día.' : '') + '</p>';
+  }
+
+  function consejosHtml(r) {
+    var consejos = CONSEJOS_SECTOR[r.sector] || CONSEJOS_SECTOR.Otro;
+    return '<section class="tarjeta consejos-sector" aria-labelledby="titulo-consejos">' +
+      '<h2 id="titulo-consejos">Consejos para ' + esc(r.sector || 'su negocio').toLowerCase() + '</h2>' +
+      '<ol>' + consejos.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ol></section>';
   }
 
   // Barras 3D de los últimos ciclos de la empresa, con el plano del límite de 90 %.
@@ -331,11 +457,17 @@
     var suyos = registros.filter(function (r) { return r.empresa === emp; })
       .sort(function (a, b) { return a.ciclo < b.ciclo ? 1 : -1; });
     $('#tablero').innerHTML = suyos.length
-      ? escenarioCiclo(suyos[0]) + grafica3d(suyos) + podio3d(suyos[0]) +
+      ? escenarioCiclo(suyos[0]) +
+        '<div class="herramientas">' + proyeccionHtml(suyos[0]) + consejosHtml(suyos[0]) + '</div>' +
+        grafica3d(suyos) + podio3d(suyos[0]) +
         (suyos.length > 1 ? '<h2 class="subtitulo-ciclos">Ciclos anteriores</h2><div class="ciclos">' + suyos.slice(1).map(tarjetaCiclo).join('') + '</div>' : '')
       : '<p class="vacio">Esta empresa aún no tiene ciclos registrados.</p>';
   }
   $('#sel-empresa').addEventListener('change', function () { pintarTablero(); });
+  $('#tablero').addEventListener('input', function (ev) {
+    var formP = ev.target.closest('.form-proyeccion');
+    if (formP) pintarProyeccion(formP);
+  });
 
   /* ---------- Registro ---------- */
   var form = $('#form-registro');
@@ -356,7 +488,8 @@
       inicio: d.get('inicio'),
       fin: d.get('fin'),
       consumoKwh: parseFloat(d.get('consumoKwh')),
-      metaDiaria: parseFloat(d.get('metaDiaria'))
+      metaDiaria: parseFloat(d.get('metaDiaria')),
+      tarifaKwh: parseFloat(d.get('tarifaKwh')) || null
     };
   }
 
@@ -503,17 +636,21 @@
     pintarTablero(b.dataset.empresa);
   });
 
+  function pesosCsv(v) { return v ? v.valorDiferencia : ''; }
+
   // CSV con entradas y resultados, para recalcular en una hoja de cálculo.
   function armarCsv(ciclo) {
     var grupos = Meta.ranking(registros, ciclo);
     var cab = ['ciclo', 'tamano', 'puesto', 'empresa', 'nit', 'sector', 'factura', 'inicio', 'fin', 'dias',
-      'consumo_kwh', 'meta_kwh_dia', 'consumo_kwh_dia', 'pct_meta', 'ahorro_kwh', 'zona', 'dato_de_muestra'];
+      'consumo_kwh', 'meta_kwh_dia', 'consumo_kwh_dia', 'pct_meta', 'ahorro_kwh', 'zona', 'dato_de_muestra',
+      'tarifa_kwh', 'valor_diferencia_pesos'];
     var lineas = [cab.join(';')];
     Meta.TAMANOS.forEach(function (t) {
       grupos[t].forEach(function (r) {
         var x = r.resultado;
         lineas.push([r.ciclo, r.tamano, r.puesto, r.empresa, r.nit, r.sector, r.factura, r.inicio, r.fin, x.dias,
-          r.consumoKwh, r.metaDiaria, x.consumoDiario, x.porcentaje, x.ahorroKwh, x.zona, r.muestra ? 'si' : 'no']
+          r.consumoKwh, r.metaDiaria, x.consumoDiario, x.porcentaje, x.ahorroKwh, x.zona, r.muestra ? 'si' : 'no',
+          r.tarifaKwh || '', pesosCsv(Meta.valorEnPesos(r, parametros))]
           .map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(';'));
       });
     });
@@ -541,6 +678,20 @@
     try {
       navigator.clipboard.writeText(texto).then(listo, manual);
     } catch (e) { manual(); }
+  });
+
+  /* ---------- Parámetros del valor en pesos ---------- */
+  var formParametros = $('#form-parametros');
+  formParametros.pctBono.value = parametros.pctBono || '';
+  formParametros.pctRecargo.value = parametros.pctRecargo || '';
+  formParametros.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    parametros = {
+      pctBono: Math.max(0, parseFloat(formParametros.pctBono.value) || 0),
+      pctRecargo: Math.max(0, parseFloat(formParametros.pctRecargo.value) || 0)
+    };
+    try { localStorage.setItem(CLAVE_PARAMETROS, JSON.stringify(parametros)); } catch (e) { /* modo privado */ }
+    $('#estado-parametros').textContent = 'Guardado. El tablero y el CSV ya usan estos porcentajes.';
   });
 
   mostrar('tablero');
