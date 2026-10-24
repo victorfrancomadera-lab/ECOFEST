@@ -7,7 +7,7 @@
   <meta name="description" content="Tablero de consumo contra meta y ranking de ahorro de energía de las empresas de la Cámara de Comercio de Barranquilla.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -45,10 +45,29 @@
 
     <!-- REGISTRAR -->
     <section id="vista-registrar" class="vista" hidden>
-      <div class="encabezado">
-        <p class="kicker">Registro de un ciclo</p>
-        <h1>Copie cinco datos de su factura</h1>
-        <p class="lead">Todo sale de la factura de energía. Si no encuentra la meta, abajo la calculamos con sus facturas anteriores.</p>
+      <div class="encabezado encabezado-3d">
+        <div class="encabezado-txt">
+          <p class="kicker">Registro de un ciclo</p>
+          <h1>Copie cinco datos de su factura</h1>
+          <p class="lead">Todo sale de la factura de energía. Cada número de la factura corresponde a un campo del formulario. Si no encuentra la meta, abajo la calculamos con sus facturas anteriores.</p>
+        </div>
+        <figure class="e3d factura-3d" role="img" aria-label="Factura de energía de ejemplo con los cinco datos que se copian: 1 número de factura, 2 inicio del periodo, 3 fecha de lectura, 4 consumo en kWh, 5 meta en kWh por día.">
+          <div class="esc" style="width:320px;height:400px">
+            <div class="flota" style="left:10px;top:0;width:300px;height:390px">
+              <div class="cub" style="--w:300px;--h:390px;--d:8px;--cf:#ffffff;--cs:#c5d6cf;--ct:#e8efec"><i class="f"><span class="papel">
+                <span class="papel-titulo">Factura de energía <small>(ejemplo)</small></span>
+                <span class="papel-linea" style="width:70%"></span>
+                <span class="papel-fila"><b class="paso">1</b><span>Factura</span><span class="papel-valor">N.º 0000123</span></span>
+                <span class="papel-fila"><b class="paso">2</b><span>Desde</span><span class="papel-valor">01/10/2026</span></span>
+                <span class="papel-fila"><b class="paso">3</b><span>Lectura</span><span class="papel-valor">20/10/2026</span></span>
+                <span class="papel-fila"><b class="paso">4</b><span>Consumo</span><span class="papel-valor">1.139 kWh</span></span>
+                <span class="papel-fila"><b class="paso">5</b><span>Meta diaria</span><span class="papel-valor">64 kWh/día</span></span>
+                <span class="papel-linea"></span>
+                <span class="papel-linea" style="width:55%"></span>
+              </span></i><i class="r"></i><i class="l"></i><i class="t"></i></div>
+            </div>
+          </div>
+        </figure>
       </div>
       <form id="form-registro" class="tarjeta form" novalidate>
         <div class="grid2">
@@ -69,12 +88,12 @@
         </div>
         <hr>
         <div class="grid2">
-          <label class="campo"><span>Número de factura</span><input name="factura" placeholder="Como aparece en la factura"></label>
+          <label class="campo"><span><b class="paso" aria-hidden="true">1</b> Número de factura</span><input name="factura" placeholder="Como aparece en la factura"></label>
           <label class="campo"><span>Mes del ciclo</span><input name="ciclo" type="month" required></label>
-          <label class="campo"><span>Inicio del periodo facturado</span><input name="inicio" type="date" required></label>
-          <label class="campo"><span>Fecha de lectura (fin)</span><input name="fin" type="date" required></label>
-          <label class="campo"><span>Consumo del periodo (kWh)</span><input name="consumoKwh" type="number" min="0" step="any" inputmode="decimal" required></label>
-          <label class="campo"><span>Meta de consumo (kWh por día)</span><input name="metaDiaria" type="number" min="0" step="any" inputmode="decimal" required></label>
+          <label class="campo"><span><b class="paso" aria-hidden="true">2</b> Inicio del periodo facturado</span><input name="inicio" type="date" required></label>
+          <label class="campo"><span><b class="paso" aria-hidden="true">3</b> Fecha de lectura (fin)</span><input name="fin" type="date" required></label>
+          <label class="campo"><span><b class="paso" aria-hidden="true">4</b> Consumo del periodo (kWh)</span><input name="consumoKwh" type="number" min="0" step="any" inputmode="decimal" required></label>
+          <label class="campo"><span><b class="paso" aria-hidden="true">5</b> Meta de consumo (kWh por día)</span><input name="metaDiaria" type="number" min="0" step="any" inputmode="decimal" required></label>
         </div>
 
         <details class="ayuda-meta">
@@ -110,7 +129,7 @@
         <p id="csv-estado" class="nota" aria-live="polite"></p>
         <textarea id="csv-texto" rows="6" readonly aria-label="CSV del ranking"></textarea>
       </div>
-      <div id="resumen-ciudad" class="kpis"></div>
+      <div id="resumen-ciudad" class="resumen-ciudad"></div>
       <div id="ranking" class="ranking"></div>
     </section>
 
