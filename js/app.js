@@ -4,7 +4,7 @@
 
   var CLAVE = 'medidor-pacto-v1';
   var ESCALA_MAX = 150; // la barra va de 0 % a 150 % de la meta
-  var NOMBRE_ZONA = { ahorro: 'Ahorro · bono', segura: 'Zona segura', recargo: 'Recargo' };
+  var NOMBRE_ZONA = { ahorro: 'Ahorro<span class="largo"> · bono</span>', segura: '<span class="largo">Zona </span>segura', recargo: 'Recargo' };
   var CONSEJO = {
     ahorro: 'Va en ahorro: recibe bono en la factura. Mantenga lo que está haciendo y súbalo al Muro del Pacto.',
     segura: 'Está en zona segura: no paga extra. Le falta poco para el bono: suba el aire a 24 °C y apague equipos al cerrar.',
