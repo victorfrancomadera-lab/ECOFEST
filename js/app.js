@@ -200,6 +200,78 @@
       '</div></figure></section>';
   }
 
+  // Altura de un pilar: lo que la empresa quedó por debajo del 150 % de su meta (más alto = más ahorro).
+  function altoPilar(pct, factor, minimo) {
+    return Math.max(minimo, Math.round((ESCALA_MAX - Math.min(pct, ESCALA_MAX)) * factor));
+  }
+
+  // Pilares de un podio; la empresa resaltada va en color pleno y con el marcador encima.
+  function podioFigura(lista, resaltada, clase) {
+    var ancho = lista.length * 130 + 60;
+    var miIndice = -1;
+    var pilares = lista.map(function (g, i) {
+      var yo = g.empresa === resaltada;
+      if (yo) miIndice = i;
+      var z = g.resultado.zona;
+      var h = altoPilar(g.resultado.porcentaje, 3, 30);
+      return cubo(30 + i * 130, 330 - h, 100, h, 100, CARAS[yo ? z : z + 'Suave'], i * 0.1, g.puesto, yo ? CARAS_TEXTO[z] : '');
+    }).join('');
+    var miAlto = miIndice < 0 ? 0 : altoPilar(lista[miIndice].resultado.porcentaje, 3, 30);
+    return '<figure class="e3d ' + clase + '" role="img" aria-label="Podio: ' + lista.map(function (g) { return g.puesto + ' ' + esc(g.empresa) + ' ' + num(g.resultado.porcentaje, 1) + ' %'; }).join(', ') + '.">' +
+      '<div class="esc" style="width:' + ancho + 'px;height:400px">' +
+      '<div class="piso claro" style="left:' + (ancho / 2 - 380) + 'px;top:-50px;width:760px;height:760px"></div>' +
+      pilares +
+      (miIndice >= 0 ? alfiler(80 + miIndice * 130, 330 - miAlto - 120, 70, true) : '') +
+      '</div></figure>';
+  }
+
+  // Ciudad 3D del ranking: una fila por tamaño (Micro al fondo, Grande al frente), un edificio por empresa.
+  function ciudad3d(grupos) {
+    var columnas = 1;
+    Meta.TAMANOS.forEach(function (t) { columnas = Math.max(columnas, Math.min(grupos[t].length, 6)); });
+    var ancho = 180 + columnas * 88 + 30;
+    var filas = Meta.TAMANOS.map(function (t, f) {
+      var z = Math.round((f - (Meta.TAMANOS.length - 1) / 2) * 100);
+      // Letrero de pie con el nombre del tamaño: el de atrás asoma por encima del de adelante.
+      var placa = cubo(10, 200, 116, 40, 6, ['#e3f2ed', '#9dbdb4', '#ffffff'], f * 0.12, '<span class="placa">' + esc(t) + '</span>');
+      var edificios = grupos[t].slice(0, 6).map(function (g, i) {
+        var h = altoPilar(g.resultado.porcentaje, 1.6, 18);
+        return cubo(185 + i * 88, 240 - h, 56, h, 56, CARAS[g.resultado.zona], f * 0.12 + i * 0.06, g.puesto);
+      }).join('');
+      return '<div class="fila3d" style="transform:translateZ(' + z + 'px)">' + placa + edificios + '</div>';
+    }).join('');
+    return '<figure class="e3d alta" role="img" aria-label="Ciudad del ranking: una fila por tamaño, un edificio por empresa, más alto quien más ahorró. Verde ahorro, cian zona segura, rojo recargo.">' +
+      '<div class="esc" style="width:' + ancho + 'px;height:320px">' +
+      '<div class="piso" style="left:' + (ancho / 2 - 400) + 'px;top:-160px;width:800px;height:800px"></div>' +
+      filas + '</div></figure>';
+  }
+
+  // Escenario oscuro del ranking: total ahorrado en relieve y la ciudad 3D.
+  function escenarioRanking(ciclo, grupos, todos) {
+    var ahorro = 0, zonas = { ahorro: 0, segura: 0, recargo: 0 };
+    todos.forEach(function (r) {
+      ahorro += r.resultado.ahorroKwh;
+      zonas[r.resultado.zona]++;
+    });
+    var titular = zonas.ahorro + ' en ahorro, ' + zonas.recargo + ' en recargo.';
+    return '<article class="escenario">' +
+      '<span class="orbe verde" aria-hidden="true" style="width:110px;height:110px;right:-34px;bottom:34%"></span>' +
+      '<span class="orbe cian" aria-hidden="true" style="width:48px;height:48px;left:47%;bottom:150px;animation-delay:-3s"></span>' +
+      '<div class="escenario-cab"><span>Ciclo ' + esc(nombreCiclo(ciclo)) + ' · ' + todos.length + ' empresas</span></div>' +
+      '<div class="escenario-cuerpo"><div class="escenario-texto">' +
+      '<div class="pct-3d total ' + (ahorro >= 0 ? 'ahorro' : 'recargo') + '">' + num(Math.abs(ahorro)) + '</div>' +
+      '<h2 class="titular">kWh ' + (ahorro >= 0 ? 'ahorrados' : 'por encima') + ' frente a las metas</h2>' +
+      '<p>' + titular + ' Cada edificio es una empresa: más alto, más ahorro. Las filas van por tamaño, de micro (al fondo) a grande (al frente).</p>' +
+      '<ul class="leyenda oscura"><li><span class="cuadro ahorro"></span>Ahorro</li><li><span class="cuadro segura"></span>Segura</li><li><span class="cuadro recargo"></span>Recargo</li></ul>' +
+      '</div>' + ciudad3d(grupos) + '</div>' +
+      '<div class="datos">' +
+      '<div class="dato"><b>' + todos.length + '</b><span>empresas medidas</span></div>' +
+      '<div class="dato"><b>' + zonas.ahorro + '</b><span>en ahorro (bono)</span></div>' +
+      '<div class="dato"><b>' + zonas.segura + '</b><span>en zona segura</span></div>' +
+      '<div class="dato"><b>' + zonas.recargo + '</b><span>en recargo</span></div>' +
+      '</div></article>';
+  }
+
   // Podio 3D del grupo de tamaño: más alto = más lejos del 150 % = más ahorro.
   function podio3d(r) {
     var grupo = Meta.ranking(registros, r.ciclo)[r.tamano] || [];
@@ -207,25 +279,10 @@
     var lista = grupo.slice(0, 5);
     var mio = grupo.filter(function (g) { return g.empresa === r.empresa; })[0];
     if (mio && mio.puesto > 5) lista = grupo.slice(0, 4).concat([mio]);
-    var ancho = lista.length * 130 + 60;
-    var pilares = lista.map(function (g, i) {
-      var yo = g.empresa === r.empresa;
-      var z = g.resultado.zona;
-      var h = Math.max(30, Math.round((ESCALA_MAX - Math.min(g.resultado.porcentaje, ESCALA_MAX)) * 3));
-      return cubo(30 + i * 130, 330 - h, 100, h, 100, CARAS[yo ? z : z + 'Suave'], i * 0.1, g.puesto, yo ? CARAS_TEXTO[z] : '');
-    }).join('');
-    var miIndice = -1;
-    lista.forEach(function (g, i) { if (g.empresa === r.empresa) miIndice = i; });
-    var miAlto = miIndice < 0 ? 0 : Math.max(30, Math.round((ESCALA_MAX - Math.min(lista[miIndice].resultado.porcentaje, ESCALA_MAX)) * 3));
     var titulo = mio ? 'Puesto ' + mio.puesto + ' de ' + grupo.length + ' entre empresas de tamaño ' + esc(r.tamano.toLowerCase())
       : 'Ranking de empresas de tamaño ' + esc(r.tamano.toLowerCase());
     return '<section class="seccion-3d invertida">' +
-      '<figure class="e3d" role="img" aria-label="Podio: ' + lista.map(function (g) { return g.puesto + ' ' + esc(g.empresa) + ' ' + num(g.resultado.porcentaje, 1) + ' %'; }).join(', ') + '.">' +
-      '<div class="esc" style="width:' + ancho + 'px;height:400px">' +
-      '<div class="piso claro" style="left:' + (ancho / 2 - 380) + 'px;top:-50px;width:760px;height:760px"></div>' +
-      pilares +
-      (miIndice >= 0 ? alfiler(80 + miIndice * 130, 330 - miAlto - 120, 70, true) : '') +
-      '</div></figure>' +
+      podioFigura(lista, r.empresa, '') +
       '<div class="seccion-texto"><h2>' + titulo + '</h2>' +
       '<ol class="podio-lista">' + lista.map(function (g) {
         var yo = g.empresa === r.empresa;
@@ -384,16 +441,9 @@
     var todos = [];
     Meta.TAMANOS.forEach(function (t) { todos = todos.concat(grupos[t]); });
 
-    var ahorro = 0, zonas = { ahorro: 0, segura: 0, recargo: 0 };
-    todos.forEach(function (r) {
-      ahorro += r.resultado.ahorroKwh;
-      zonas[r.resultado.zona]++;
-    });
-    $('#resumen-ciudad').innerHTML =
-      '<div class="kpi"><b>' + todos.length + '</b><span>empresas medidas</span></div>' +
-      '<div class="kpi"><b>' + num(ahorro) + '</b><span>kWh ' + (ahorro >= 0 ? 'ahorrados' : 'por encima') + ' frente a las metas</span></div>' +
-      '<div class="kpi"><b>' + zonas.ahorro + '</b><span>en ahorro (bono)</span></div>' +
-      '<div class="kpi"><b>' + zonas.recargo + '</b><span>en recargo</span></div>';
+    $('#resumen-ciudad').innerHTML = todos.length
+      ? escenarioRanking(ciclo, grupos, todos)
+      : '<p class="vacio">No hay empresas registradas en este ciclo.</p>';
 
     $('#ranking').innerHTML = Meta.TAMANOS.map(function (t) {
       var g = grupos[t];
@@ -406,6 +456,7 @@
           '<td><span class="chip ' + r.resultado.zona + '">' + NOMBRE_ZONA[r.resultado.zona] + '</span></td></tr>';
       }).join('');
       return '<section class="tarjeta"><h3>' + t + '</h3>' +
+        (g.length > 1 ? podioFigura(g.slice(0, 5), g[0].empresa, 'mini') : '') +
         (g.length
           ? '<div class="tabla-wrap"><table><thead><tr><th>#</th><th>Empresa</th><th class="num">% meta</th><th class="num">kWh ahorrados</th><th>Zona</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
           : '<p class="vacio">Sin empresas de este tamaño en el ciclo.</p>') +

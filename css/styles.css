@@ -249,6 +249,18 @@ textarea { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-s
 @keyframes flota { from { transform: translateY(0); } to { transform: translateY(-16px); } }
 @keyframes deriva { from { transform: translate(0, 0); } to { transform: translate(12px, -22px); } }
 
+/* Ranking en 3D: ciudad de empresas y podios por tamaño */
+.resumen-ciudad { margin-bottom: 32px; }
+.pct-3d.total { font-size: clamp(88px, 11vw, 150px); }
+.leyenda.oscura { color: var(--noche-texto); }
+.fila3d { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-style: preserve-3d; }
+.placa { display: flex; width: 100%; height: 100%; margin-top: -6px; padding-left: 10px; align-items: center; justify-content: flex-start; font-size: 18px; font-weight: 800; font-stretch: 80%; color: #04201a; }
+.e3d.alta { height: 440px; perspective: 1900px; }
+.e3d.alta .cub > .f { font-size: 30px; padding-top: 6px; }
+.e3d.alta .esc { transform: rotateX(-30deg) rotateY(-26deg); animation-name: balanceo-alto; }
+@keyframes balanceo-alto { from { transform: rotateX(-32deg) rotateY(-34deg); } to { transform: rotateX(-26deg) rotateY(-16deg); } }
+.e3d.mini { height: 300px; zoom: .6; margin: 8px 0 40px; }
+
 /* Ranking */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
 .kpi { background: var(--noche); color: #fff; border-radius: var(--radio); padding: 20px 24px; box-shadow: 0 6px 0 #02713b; }
@@ -286,6 +298,7 @@ tr.top1 .puesto { color: var(--ahorro); }
   .tarjeta { padding: 20px; }
   .escenario { padding: 24px 20px; border-radius: 22px; }
   .e3d { zoom: .56; flex-basis: 100%; }
+  .e3d.mini { zoom: .5; }
   .orbe { display: none; }
   .grid2, .ranking { grid-template-columns: 1fr; }
   .resultado { grid-template-columns: 1fr; gap: 12px; }
