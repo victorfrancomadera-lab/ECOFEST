@@ -680,6 +680,83 @@
     } catch (e) { manual(); }
   });
 
+  /* ---------- Leer la factura con IA (solo si el servidor la tiene activa) ---------- */
+  var LADO_MAXIMO = 2000;   // px: suficiente para leer la factura y liviano de enviar
+  var PDF_MAXIMO = 8 * 1024 * 1024;
+
+  // Las fotos se reducen y pasan a JPEG en el navegador antes de enviarlas.
+  function fotoComoJpeg(archivo) {
+    return createImageBitmap(archivo).then(function (img) {
+      var escala = Math.min(1, LADO_MAXIMO / Math.max(img.width, img.height));
+      var lienzo = document.createElement('canvas');
+      lienzo.width = Math.round(img.width * escala);
+      lienzo.height = Math.round(img.height * escala);
+      lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
+      return { tipo: 'image/jpeg', datos: lienzo.toDataURL('image/jpeg', 0.85).split(',')[1] };
+    });
+  }
+  function pdfComoBase64(archivo) {
+    return new Promise(function (resolver, rechazar) {
+      var lector = new FileReader();
+      lector.onload = function () { resolver({ tipo: 'application/pdf', datos: String(lector.result).split(',')[1] }); };
+      lector.onerror = rechazar;
+      lector.readAsDataURL(archivo);
+    });
+  }
+
+  function estadoLectura(html, clase) {
+    var caja = $('#estado-lectura');
+    caja.className = 'estado-lectura ' + (clase || '');
+    caja.innerHTML = html;
+  }
+
+  function llenarConLectura(datos) {
+    var llenos = [];
+    [['factura', datos.factura], ['inicio', datos.inicio], ['fin', datos.fin], ['ciclo', datos.ciclo],
+      ['consumoKwh', datos.consumoKwh], ['metaDiaria', datos.metaDiaria], ['tarifaKwh', datos.tarifaKwh]].forEach(function (par) {
+      var campo = form[par[0]];
+      campo.classList.remove('autollenado');
+      if (par[1] == null || par[1] === '') return;
+      campo.value = par[1];
+      campo.classList.add('autollenado');
+      llenos.push(par[0]);
+    });
+    vistaPrevia(false);
+    return llenos.length;
+  }
+
+  $('#archivo-factura').addEventListener('change', function (ev) {
+    var archivo = ev.target.files[0];
+    ev.target.value = '';
+    if (!archivo) return;
+    var esPdf = archivo.type === 'application/pdf';
+    if (esPdf && archivo.size > PDF_MAXIMO) return estadoLectura('El PDF pesa más de 8 MB. Use una foto de la factura.', 'err');
+    estadoLectura('Leyendo la factura… puede tardar unos segundos.', 'cargando');
+    (esPdf ? pdfComoBase64(archivo) : fotoComoJpeg(archivo))
+      .catch(function () { throw new Error('No pude abrir esa imagen. Si es una foto de iPhone, tómela otra vez o envíe una captura de pantalla.'); })
+      .then(function (cuerpo) {
+        return fetch('api/leer-factura', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+          .catch(function () { throw new Error('No hubo conexión. Revise el internet e intente de nuevo.'); });
+      })
+      .then(function (resp) {
+        return resp.json().catch(function () { return {}; }).then(function (r) {
+          if (!resp.ok) throw new Error(r.error || 'No se pudo leer la factura.');
+          return r;
+        });
+      })
+      .then(function (r) {
+        var n = llenarConLectura(r.datos);
+        estadoLectura('<p><b>Listo: llenamos ' + n + ' campos.</b> Revíselos contra la factura antes de guardar; los llenados van resaltados.</p>' +
+          lista(r.avisos || [], 'alerta'), 'ok');
+      })
+      .catch(function (e) { estadoLectura(esc(e.message), 'err'); });
+  });
+
+  // Si el servidor no tiene la lectura con IA (o la página se abre como archivo), el botón no aparece.
+  fetch('api/estado').then(function (r) { return r.json(); })
+    .then(function (e) { if (e && e.lecturaConIA) $('#leer-factura').hidden = false; })
+    .catch(function () { /* sin servidor: el registro sigue siendo manual */ });
+
   /* ---------- Parámetros del valor en pesos ---------- */
   var formParametros = $('#form-parametros');
   formParametros.pctBono.value = parametros.pctBono || '';

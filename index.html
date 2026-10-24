@@ -70,6 +70,14 @@
         </figure>
       </div>
       <form id="form-registro" class="tarjeta form" novalidate>
+        <div id="leer-factura" class="leer-factura" hidden>
+          <div class="leer-factura-texto">
+            <h2 class="leer-titulo">¿Tiene la factura a mano?</h2>
+            <p class="nota">Suba una foto o el PDF y llenamos los datos por usted; revíselos antes de guardar. El archivo se envía al servicio de IA de Anthropic solo para leerlo y este sitio no lo guarda.</p>
+          </div>
+          <label class="btn btn-archivo"><span>Leer factura con foto o PDF</span><input type="file" id="archivo-factura" accept="image/jpeg,image/png,image/webp,image/*,application/pdf" class="visualmente-oculto"></label>
+          <div id="estado-lectura" class="estado-lectura" aria-live="polite"></div>
+        </div>
         <div class="grid2">
           <label class="campo"><span>Nombre de la empresa</span><input name="empresa" list="lista-empresas" required autocomplete="organization"></label>
           <label class="campo"><span>NIT</span><input name="nit" inputmode="numeric" placeholder="900123456-7"></label>

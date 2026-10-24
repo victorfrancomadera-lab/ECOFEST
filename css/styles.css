@@ -286,6 +286,22 @@ textarea { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-s
 .form-parametros { margin: 16px 0 8px; align-items: end; }
 .form-parametros .fila { grid-column: 1 / -1; margin-top: 0; }
 
+/* Leer la factura con IA */
+.leer-factura { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-bottom: 28px; padding: 20px 22px;
+  border-radius: var(--radio-campo); background: var(--ahorro-bg); }
+.leer-factura-texto { flex: 1 1 320px; min-width: 0; }
+.leer-titulo { margin: 0 0 4px; font-size: 24px; }
+.leer-factura .nota { margin: 0; color: var(--texto); }
+.btn-archivo { display: inline-flex; align-items: center; cursor: pointer; }
+.btn-archivo:focus-within { outline: 3px solid var(--cian); outline-offset: 2px; }
+.visualmente-oculto { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.estado-lectura { flex: 1 1 100%; }
+.estado-lectura:empty { display: none; }
+.estado-lectura p { margin: 0; }
+.estado-lectura.err { color: var(--recargo); font-weight: 600; }
+.estado-lectura.cargando { color: var(--suave); }
+input.autollenado { border-color: var(--verde-vivo); box-shadow: 0 0 0 3px var(--ahorro-bg); }
+
 /* Ranking en 3D: ciudad de empresas y podios por tamaño */
 .resumen-ciudad { margin-bottom: 32px; }
 .pct-3d.total { font-size: clamp(88px, 11vw, 150px); }

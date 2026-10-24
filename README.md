@@ -36,13 +36,30 @@ Ya existen la calculadora y el checklist de ahorro. Faltaba con qué **seguir y 
 
 ## Correrlo
 
-No necesita instalar nada. Abra `index.html` en el navegador.
+Sin instalar nada: abra `index.html` en el navegador. Funciona todo menos la lectura de la factura con IA.
 
-Pruebas del cálculo (Node 18 o superior):
+Con el servidor (Node 20 o superior), que además lee facturas con foto o PDF:
 
 ```
-node --test
+npm install
+ANTHROPIC_API_KEY=su-clave npm start     # http://localhost:3000
 ```
+
+Sin `ANTHROPIC_API_KEY` el servidor arranca igual y el botón de leer la factura no aparece.
+
+Pruebas (cálculo, lector de facturas y servidor):
+
+```
+npm test
+```
+
+### Publicarlo en Railway
+
+Railway detecta el `package.json` y corre `npm start` en el puerto que asigna (`PORT`). Para activar la lectura con IA, agregue la variable `ANTHROPIC_API_KEY` en el servicio (Variables). Cada lectura llama una vez a la API de Anthropic con el modelo `claude-opus-5-5` y tiene costo; el servidor limita a 20 lecturas por hora por dirección IP.
+
+### Leer la factura con IA
+
+`server.js` recibe la foto (reducida a JPEG en el navegador) o el PDF y `lector.js` le pide a Claude los datos en un formato JSON fijo: número de factura, fechas de lectura, días, consumo, meta y tarifa. El inicio del periodo es el día siguiente a la lectura anterior, para que los días coincidan con la factura. Si la factura no trae la meta, se avisa y se calcula con las 12 facturas anteriores. La persona revisa los campos llenados antes de guardar. El sitio no guarda el archivo.
 
 ## Datos
 
@@ -50,8 +67,7 @@ Solo datos de muestra: 16 empresas ficticias de Barranquilla con facturas de sep
 
 ## Lo que le falta
 
-- Leer la factura con foto (OCR) en lugar de digitar.
-- Calcular el bono o recargo en pesos cuando se publiquen las tarifas.
+- Reemplazar los porcentajes estimados del bono y el recargo por la regla oficial cuando se publique.
 - Servidor con usuarios y validación de la factura por la Cámara, para que el ranking sea oficial.
 - Conexión con la app EcoFriends (Línea 2) y la priorización de visitas (Línea 3): una empresa en recargo debería subir en la lista de visitas técnicas.
 
@@ -60,10 +76,12 @@ Solo datos de muestra: 16 empresas ficticias de Barranquilla con facturas de sep
 ```
 index.html            Interfaz (4 vistas)
 css/styles.css        Estilos
-js/meta.js            Motor de cálculo (puro, probado)
+js/meta.js            Motor de cálculo (puro, probado): % de la meta, ranking, valor en pesos, proyección
 js/app.js             Lógica de la interfaz
 js/datos-muestra.js   Facturas de ejemplo
-tests/meta.test.js    Pruebas
+server.js             Servidor: sirve la página y la ruta /api/leer-factura
+lector.js             Lectura de facturas con Claude (formato JSON fijo)
+tests/                Pruebas del cálculo, del lector y del servidor
 docs/pitch.md         Guion de 3 minutos
 ```
 
