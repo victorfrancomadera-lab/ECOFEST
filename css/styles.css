@@ -222,7 +222,8 @@ textarea { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-s
 .cuadro.recargo, .bola.recargo { background: var(--rojo-zona); }
 
 /* Motor 3D: cubos de cuatro caras visibles (frente, lados, tapa) con variables de tamaño y color */
-.e3d { flex: 1 1 520px; min-width: 0; margin: 0; height: 420px; display: flex; align-items: center; justify-content: center; perspective: 1500px; perspective-origin: 50% 20%; }
+/* Las figuras no tienen controles: el puntero las atraviesa, porque sus pisos y pilares se salen de la caja y taparían lo que hay debajo. */
+.e3d { pointer-events: none; flex: 1 1 520px; min-width: 0; margin: 0; height: 420px; display: flex; align-items: center; justify-content: center; perspective: 1500px; perspective-origin: 50% 20%; }
 .esc { position: relative; flex: 0 0 auto; transform-style: preserve-3d; transform: rotateX(-20deg) rotateY(-28deg); animation: balanceo 10s ease-in-out infinite alternate; }
 .cub, .crece, .flota { position: absolute; transform-style: preserve-3d; }
 .cub { width: var(--w); height: var(--h); }
@@ -317,7 +318,7 @@ tr.top1 .puesto { color: var(--ahorro); }
   .tarjeta { padding: 20px; }
   .escenario { padding: 24px 20px; border-radius: 22px; }
   .e3d { zoom: .56; flex-basis: 100%; }
-  .e3d.mini { zoom: .5; }
+  .e3d.mini { zoom: .5; margin-top: 56px; }
   .e3d.factura-3d { flex-basis: auto; height: 400px; margin: 0 auto; }
   .orbe { display: none; }
   .grid2, .ranking { grid-template-columns: 1fr; }
@@ -329,6 +330,31 @@ tr.top1 .puesto { color: var(--ahorro); }
   .kpi { padding: 16px; }
   .kpi b { font-size: 36px; }
   .chip .largo { display: none; }
+}
+
+/* Ranking en celular: cada empresa es un bloque de dos líneas en lugar de una fila ancha.
+   Los roles de tabla van en el marcado para que los lectores de pantalla la sigan leyendo como tabla. */
+@media (max-width: 760px) {
+  .ranking .tabla-wrap { overflow: visible; }
+  .ranking table, .ranking tbody, .ranking td { display: block; }
+  .ranking thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .ranking tr {
+    display: grid; grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-areas: "puesto empresa zona" "puesto meta kwh"; gap: 6px 12px; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--borde);
+  }
+  .ranking tr:last-child { border-bottom: 0; }
+  .ranking td { padding: 0; border: 0; }
+  .ranking tr.top1 { background: var(--resalte); margin: 0 -12px; padding: 14px 12px; border-radius: 12px; }
+  .ranking tr.top1 td { background: transparent; }
+  .ranking td.puesto { grid-area: puesto; align-self: start; font-size: 28px; line-height: 1; }
+  .ranking td.empresa { grid-area: empresa; font-weight: 600; }
+  .ranking td.zona { grid-area: zona; justify-self: end; }
+  .ranking td.num { text-align: left; font-size: 15px; }
+  .ranking td.num:nth-child(3) { grid-area: meta; }
+  .ranking td.num:nth-child(4) { grid-area: kwh; justify-self: end; }
+  .ranking td.num::before { content: attr(data-label) " "; font-size: 13px; color: var(--suave); }
+  .ranking .chip { font-size: 13px; padding: 4px 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

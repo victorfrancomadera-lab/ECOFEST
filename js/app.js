@@ -479,17 +479,18 @@
     $('#ranking').innerHTML = Meta.TAMANOS.map(function (t) {
       var g = grupos[t];
       var filas = g.map(function (r) {
-        return '<tr class="' + (r.puesto === 1 ? 'top1' : '') + '">' +
-          '<td class="puesto">' + r.puesto + '</td>' +
-          '<td><button class="btn-link" data-empresa="' + esc(r.empresa) + '">' + esc(r.empresa) + '</button></td>' +
-          '<td class="num">' + num(r.resultado.porcentaje, 1) + ' %</td>' +
-          '<td class="num">' + num(r.resultado.ahorroKwh) + '</td>' +
-          '<td><span class="chip ' + r.resultado.zona + '">' + NOMBRE_ZONA[r.resultado.zona] + '</span></td></tr>';
+        // data-label da la etiqueta de cada dato cuando la fila se apila en celular.
+        return '<tr role="row" class="' + (r.puesto === 1 ? 'top1' : '') + '">' +
+          '<td role="cell" class="puesto">' + r.puesto + '</td>' +
+          '<td role="cell" class="empresa"><button class="btn-link" data-empresa="' + esc(r.empresa) + '">' + esc(r.empresa) + '</button></td>' +
+          '<td role="cell" class="num" data-label="% meta">' + num(r.resultado.porcentaje, 1) + ' %</td>' +
+          '<td role="cell" class="num" data-label="kWh ahorrados">' + num(r.resultado.ahorroKwh) + '</td>' +
+          '<td role="cell" class="zona"><span class="chip ' + r.resultado.zona + '">' + NOMBRE_ZONA[r.resultado.zona] + '</span></td></tr>';
       }).join('');
       return '<section class="tarjeta"><h3>' + t + '</h3>' +
         (g.length > 1 ? podioFigura(g.slice(0, 5), g[0].empresa, 'mini') : '') +
         (g.length
-          ? '<div class="tabla-wrap"><table><thead><tr><th>#</th><th>Empresa</th><th class="num">% meta</th><th class="num">kWh ahorrados</th><th>Zona</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
+          ? '<div class="tabla-wrap"><table role="table"><thead role="rowgroup"><tr role="row"><th role="columnheader">#</th><th role="columnheader">Empresa</th><th role="columnheader" class="num">% meta</th><th role="columnheader" class="num">kWh ahorrados</th><th role="columnheader">Zona</th></tr></thead><tbody role="rowgroup">' + filas + '</tbody></table></div>'
           : '<p class="vacio">Sin empresas de este tamaño en el ciclo.</p>') +
         '</section>';
     }).join('');
