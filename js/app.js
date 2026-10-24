@@ -119,28 +119,32 @@
   function puntos(n) { n = Math.round(n * 10) / 10; return pctCorto(n) + (n === 1 ? ' punto' : ' puntos'); }
 
   // Escala 0–150 % como tres bloques; el marcador cae donde quedó la empresa.
-  function escala3d(pct) {
+  // Posición en px del marcador sobre la escala: cada zona tiene su propio bloque.
+  function xEscala(pct) {
     var p = Math.min(Math.max(pct, 0), ESCALA_MAX);
-    var x = p <= 90 ? 24 + p / 90 * 324 : p <= 110 ? 354 + (p - 90) / 20 * 72 : 432 + (p - 110) / 40 * 144;
+    return Math.round(p <= 90 ? 24 + p / 90 * 324 : p <= 110 ? 354 + (p - 90) / 20 * 72 : 432 + (p - 110) / 40 * 144);
+  }
+  function escala3d(pct) {
+    var x = xEscala(pct);
     return '<figure class="e3d" role="img" aria-label="Escala de zonas: ahorro hasta 90 %, segura de 90 a 110 %, recargo desde 110 %. Su empresa quedó en ' + num(pct, 1) + ' %.">' +
       '<div class="esc" style="width:600px;height:380px">' +
       '<div class="piso" style="left:-80px;top:-120px;width:760px;height:760px"></div>' +
       cubo(24, 220, 324, 40, 120, CARAS.ahorro, 0) +
       cubo(354, 220, 72, 40, 120, CARAS.segura, 0.15) +
       cubo(432, 220, 144, 40, 120, CARAS.recargo, 0.3) +
-      alfiler(Math.round(x), 60, 124) +
+      alfiler(x, 60, 124) +
       '</div></figure>';
   }
 
   function titular(res) {
     var p = res.porcentaje;
     if (res.zona === 'ahorro') {
-      return ['Ganó el bono.', 'Está ' + puntos(90 - p) + ' por debajo del 90 %. Si llega a 90 %, pasa a zona segura y ya no recibe bono.'];
+      return ['Ganó el bono.', 'Está ' + puntos(90 - p) + ' por debajo del 90\u00a0%. Si llega a 90\u00a0%, pasa a zona segura y ya no recibe bono.'];
     }
     if (res.zona === 'segura') {
-      return ['Sin recargo, sin bono.', 'Le faltan ' + puntos(p - 90) + ' para bajar del 90 % y ganar el bono.'];
+      return ['Sin recargo, sin bono.', 'Le faltan ' + puntos(p - 90) + ' para bajar del 90\u00a0% y ganar el bono.'];
     }
-    return ['Va a pagar recargo.', 'Está ' + puntos(p - 110) + ' por encima del 110 % de su meta.'];
+    return ['Va a pagar recargo.', 'Está ' + puntos(p - 110) + ' por encima del 110\u00a0% de su meta.'];
   }
 
   // El ciclo más reciente, en el escenario oscuro con la escala 3D.
@@ -360,19 +364,46 @@
     return items.length ? '<ul class="mensajes ' + clase + '">' + items.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>' : '';
   }
 
+  // Resultado en vivo: el escenario se arma una vez y luego solo se mueven el marcador y los textos,
+  // para que los bloques no vuelvan a crecer con cada tecla.
+  function previa3d(res) {
+    var t = titular(res);
+    return '<article class="escenario previa">' +
+      '<div class="escenario-cab"><span class="previa-dias">Resultado del ciclo · ' + res.dias + ' días</span>' +
+      '<span class="chip ' + res.zona + '">' + NOMBRE_ZONA[res.zona] + '</span></div>' +
+      '<div class="escenario-cuerpo"><div class="escenario-texto">' +
+      '<div class="pct-3d ' + res.zona + '">' + pctCorto(res.porcentaje) + '%</div>' +
+      '<h2 class="titular">' + t[0] + '</h2><p class="previa-detalle">' + t[1] + '</p></div>' +
+      escala3d(res.porcentaje) + '</div></article>';
+  }
+  function actualizarPrevia(caja, res) {
+    var t = titular(res);
+    caja.querySelector('.previa-dias').textContent = 'Resultado del ciclo · ' + res.dias + ' días';
+    var chip = caja.querySelector('.escenario-cab .chip');
+    chip.className = 'chip ' + res.zona;
+    chip.innerHTML = NOMBRE_ZONA[res.zona];
+    var pct = caja.querySelector('.pct-3d');
+    pct.className = 'pct-3d ' + res.zona;
+    pct.textContent = pctCorto(res.porcentaje) + '%';
+    caja.querySelector('.titular').textContent = t[0];
+    caja.querySelector('.previa-detalle').textContent = t[1];
+    caja.querySelector('.e3d .flota').style.left = (xEscala(res.porcentaje) - 20) + 'px';
+    caja.querySelector('.e3d').setAttribute('aria-label', 'Escala de zonas: ahorro hasta 90 %, segura de 90 a 110 %, recargo desde 110 %. Su empresa quedó en ' + num(res.porcentaje, 1) + ' %.');
+  }
+
   function vistaPrevia(mostrarErrores) {
     var r = leerForm();
     var v = Meta.validar(r);
-    var html = '';
+    var caja = $('#vista-previa');
+    var mensajes = lista(v.alertas, 'alerta') + (mostrarErrores ? lista(v.errores, 'err') : '');
     if (v.valido) {
       var res = Meta.evaluar(r);
-      html = '<div class="tarjeta"><span class="ciclo-titulo">Resultado</span>' +
-        '<div class="resultado"><div><div class="pct">' + num(res.porcentaje, 1) + '<small> % de la meta</small></div>' +
-        '<span class="chip ' + res.zona + '">' + NOMBRE_ZONA[res.zona] + '</span></div>' + barra(res.porcentaje) + '</div></div>';
+      if (caja.querySelector('.escenario')) actualizarPrevia(caja, res);
+      else caja.innerHTML = previa3d(res) + '<div class="previa-mensajes"></div>';
+      caja.querySelector('.previa-mensajes').innerHTML = mensajes;
+    } else {
+      caja.innerHTML = mensajes;
     }
-    html += lista(v.alertas, 'alerta');
-    if (mostrarErrores) html += lista(v.errores, 'err');
-    $('#vista-previa').innerHTML = html;
     return v;
   }
   form.addEventListener('input', function () { vistaPrevia(false); });
