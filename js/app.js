@@ -272,8 +272,7 @@
   });
 
   // CSV con entradas y resultados, para recalcular en una hoja de cálculo.
-  $('#btn-csv').addEventListener('click', function () {
-    var ciclo = $('#sel-ciclo').value;
+  function armarCsv(ciclo) {
     var grupos = Meta.ranking(registros, ciclo);
     var cab = ['ciclo', 'tamano', 'puesto', 'empresa', 'nit', 'sector', 'factura', 'inicio', 'fin', 'dias',
       'consumo_kwh', 'meta_kwh_dia', 'consumo_kwh_dia', 'pct_meta', 'ahorro_kwh', 'zona', 'dato_de_muestra'];
@@ -286,13 +285,30 @@
           .map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(';'));
       });
     });
-    var blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    return lineas.join('\r\n');
+  }
+
+  $('#btn-csv').addEventListener('click', function () {
+    var ciclo = $('#sel-ciclo').value;
+    var blob = new Blob(['\ufeff' + armarCsv(ciclo)], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'ranking-' + ciclo + '.csv';
     document.body.appendChild(a);
     a.click();
     a.remove();
+  });
+
+  $('#btn-copiar-csv').addEventListener('click', function () {
+    var texto = armarCsv($('#sel-ciclo').value);
+    var caja = $('#csv-texto');
+    caja.value = texto;
+    $('#csv-salida').hidden = false;
+    var listo = function () { $('#csv-estado').textContent = 'CSV copiado. Péguelo en Excel o Google Sheets.'; };
+    var manual = function () { caja.select(); $('#csv-estado').textContent = 'Seleccioné el CSV: cópielo con Ctrl+C.'; };
+    try {
+      navigator.clipboard.writeText(texto).then(listo, manual);
+    } catch (e) { manual(); }
   });
 
   mostrar('tablero');

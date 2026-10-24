@@ -101,6 +101,11 @@
       <div class="fila controles">
         <label class="campo"><span>Ciclo</span><select id="sel-ciclo"></select></label>
         <button class="btn btn-sec" id="btn-csv">Descargar CSV para auditoría</button>
+        <button class="btn btn-sec" id="btn-copiar-csv">Copiar CSV</button>
+      </div>
+      <div id="csv-salida" class="csv-salida" hidden>
+        <p id="csv-estado" class="nota" aria-live="polite"></p>
+        <textarea id="csv-texto" rows="6" readonly aria-label="CSV del ranking"></textarea>
       </div>
       <div id="resumen-ciudad" class="kpis"></div>
       <div id="ranking" class="ranking"></div>
