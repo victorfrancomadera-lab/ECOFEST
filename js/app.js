@@ -753,9 +753,11 @@
   });
 
   // Si el servidor no tiene la lectura con IA (o la página se abre como archivo), el botón no aparece.
-  fetch('api/estado').then(function (r) { return r.json(); })
-    .then(function (e) { if (e && e.lecturaConIA) $('#leer-factura').hidden = false; })
-    .catch(function () { /* sin servidor: el registro sigue siendo manual */ });
+  if (location.protocol !== 'file:') {
+    fetch('api/estado').then(function (r) { return r.json(); })
+      .then(function (e) { if (e && e.lecturaConIA) $('#leer-factura').hidden = false; })
+      .catch(function () { /* sin servidor: el registro sigue siendo manual */ });
+  }
 
   /* ---------- Parámetros del valor en pesos ---------- */
   var formParametros = $('#form-parametros');
