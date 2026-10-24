@@ -7,8 +7,51 @@
   var NOMBRE_ZONA = { ahorro: 'Ahorro<span class="largo"> · bono</span>', segura: '<span class="largo">Zona </span>segura', recargo: 'Recargo' };
   var CONSEJO = {
     ahorro: 'Va en ahorro: recibe bono en la factura. Mantenga lo que está haciendo y súbalo al Muro del Pacto.',
-    segura: 'Está en zona segura: no paga extra. Le falta poco para el bono: suba el aire a 24 °C y apague equipos al cerrar.',
+    segura: 'Está en zona segura: no paga extra. Para llegar al bono, suba el aire a 24 °C y apague equipos al cerrar.',
     recargo: 'Se pasó de la meta: va a pagar recargo. Pida una visita técnica y revise primero aires acondicionados y refrigeración.'
+  };
+  // Consejos por sector: medidas sencillas que no tocan la operación crítica de cada negocio.
+  var CONSEJOS_SECTOR = {
+    Comercio: [
+      'Avisos y vitrinas con bombillos LED y un temporizador que los apague al cerrar.',
+      'Aire acondicionado en 24 °C con la puerta cerrada; una cortina de aire si la puerta pasa abierta.',
+      'Multitomas con interruptor para apagar de verdad cajas, pantallas y cargadores en la noche.'
+    ],
+    Alimentos: [
+      'Neveras y congeladores lejos del horno y del sol, con los empaques de las puertas en buen estado.',
+      'Limpie cada mes la rejilla de atrás de las neveras: si está sucia, el motor trabaja de más.',
+      'Hornos y planchas eléctricas a carga completa y sin precalentar más de lo necesario.'
+    ],
+    Servicios: [
+      'Computadores en suspensión a los 10 minutos sin uso y apagados al cerrar.',
+      'Aire acondicionado en 24 °C y filtros limpios cada tres meses.',
+      'Lavadoras, secadoras y equipos de alto consumo siempre a carga completa.'
+    ],
+    Industria: [
+      'Busque fugas de aire comprimido y apague el compresor cuando no hay producción.',
+      'Evite arrancar todos los motores grandes al mismo tiempo y mantenga su lubricación al día.',
+      'Bodegas con iluminación LED y sensores de movimiento.'
+    ],
+    Turismo: [
+      'Tarjeta o interruptor maestro que apague la habitación cuando el huésped sale.',
+      'Aire apagado en habitaciones desocupadas y en 24 °C en las ocupadas.',
+      'Lavandería a carga completa y calentadores de agua revisados para que no trabajen de más.'
+    ],
+    Salud: [
+      'No toque equipos médicos ni la cadena de frío de vacunas y medicamentos: ahorre en áreas administrativas.',
+      'Aire y luces apagados en consultorios desocupados.',
+      'Pasillos y baños con LED y sensores de movimiento.'
+    ],
+    'Educación': [
+      'Un responsable por bloque que apague aires y luces en salones vacíos.',
+      'Salas de cómputo apagadas al final de la jornada, no en reposo.',
+      'Aproveche la luz natural y use ventiladores donde el aire no sea necesario.'
+    ],
+    Otro: [
+      'Aire acondicionado en 24 °C: cada grado menos sube el consumo.',
+      'Apague luces y equipos al cerrar; los equipos en reposo también consumen.',
+      'Revise qué equipo gasta más (aires, neveras, motores) y empiece por ahí.'
+    ]
   };
   var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
@@ -26,6 +69,17 @@
     try { localStorage.setItem(CLAVE, JSON.stringify(registros)); } catch (e) { /* modo privado */ }
   }
 
+  // Porcentajes del bono y del recargo: los fija la Cámara en "Cómo se mide" mientras no haya regla oficial.
+  var CLAVE_PARAMETROS = 'medidor-pacto-parametros-v1';
+  function cargarParametros() {
+    try {
+      var p = JSON.parse(localStorage.getItem(CLAVE_PARAMETROS));
+      if (p && typeof p === 'object') return { pctBono: Number(p.pctBono) || 0, pctRecargo: Number(p.pctRecargo) || 0 };
+    } catch (e) { /* sin almacenamiento */ }
+    return { pctBono: 0, pctRecargo: 0 };
+  }
+  var parametros = cargarParametros();
+
   function num(n, dec) {
     return Number(n).toLocaleString('es-CO', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
   }
@@ -34,6 +88,7 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  function pesos(n) { return (n < 0 ? '−$' : '$') + num(Math.abs(n)); }
   function nombreCiclo(c) {
     var p = String(c).split('-');
     return (MESES[Number(p[1]) - 1] || c) + ' ' + p[0];
@@ -87,6 +142,286 @@
       '</div>';
   }
 
+  /* ---------- Figuras 3D (CSS puro: ver "Motor 3D" en styles.css) ---------- */
+  // Colores de cada cubo: frente, lado, tapa. Las versiones "suave" son para las demás empresas del podio.
+  var CARAS = {
+    ahorro: ['#06a258', '#037e42', '#3cd38a'],
+    segura: ['#01b8c6', '#018893', '#5fe3ee'],
+    recargo: ['#e06a60', '#b8473e', '#f2968e'],
+    ahorroSuave: ['#8fd9b0', '#6cc496', '#bfebd3'],
+    seguraSuave: ['#8fe0e7', '#64cbd4', '#c4f1f5'],
+    recargoSuave: ['#f2b1ab', '#e0938c', '#f8d2ce'],
+    palo: ['#e3f2ed', '#9dbdb4', '#ffffff'],
+    paloOscuro: ['#0d2b25', '#0d2b25', '#0d2b25']
+  };
+  var CARAS_TEXTO = { ahorro: '#ffffff' };
+
+  function cubo(x, y, w, h, d, c, retraso, contenido, texto) {
+    return '<div class="crece" style="left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;animation-delay:' + (retraso || 0) + 's">' +
+      caras(w, h, d, c, '', contenido, texto) + '</div>';
+  }
+  function caras(w, h, d, c, pos, contenido, texto) {
+    return '<div class="cub" style="' + pos + '--w:' + w + 'px;--h:' + h + 'px;--d:' + d + 'px;--cf:' + c[0] + ';--cs:' + c[1] + ';--ct:' + c[2] +
+      (texto ? ';--tx:' + texto : '') + '"><i class="f">' + (contenido || '') + '</i><i class="r"></i><i class="l"></i><i class="t"></i></div>';
+  }
+  // Marcador flotante: palo delgado con una esfera encima. x es el centro.
+  function alfiler(x, y, alto, oscuro) {
+    return '<div class="flota" style="left:' + (x - 20) + 'px;top:' + y + 'px;width:40px;height:' + (36 + alto) + 'px">' +
+      caras(oscuro ? 4 : 8, alto, oscuro ? 4 : 8, oscuro ? CARAS.paloOscuro : CARAS.palo, 'left:' + (oscuro ? 18 : 16) + 'px;top:36px;') +
+      '<span class="esfera ' + (oscuro ? 'verde' : 'blanca') + '"></span></div>';
+  }
+  function pctCorto(p) { return num(p, p % 1 === 0 ? 0 : 1); }
+  function puntos(n) { n = Math.round(n * 10) / 10; return pctCorto(n) + (n === 1 ? ' punto' : ' puntos'); }
+
+  // Escala 0–150 % como tres bloques; el marcador cae donde quedó la empresa.
+  // Posición en px del marcador sobre la escala: cada zona tiene su propio bloque.
+  function xEscala(pct) {
+    var p = Math.min(Math.max(pct, 0), ESCALA_MAX);
+    return Math.round(p <= 90 ? 24 + p / 90 * 324 : p <= 110 ? 354 + (p - 90) / 20 * 72 : 432 + (p - 110) / 40 * 144);
+  }
+  function escala3d(pct) {
+    var x = xEscala(pct);
+    return '<figure class="e3d" role="img" aria-label="Escala de zonas: ahorro hasta 90 %, segura de 90 a 110 %, recargo desde 110 %. Su empresa quedó en ' + num(pct, 1) + ' %.">' +
+      '<div class="esc" style="width:600px;height:380px">' +
+      '<div class="piso" style="left:-80px;top:-120px;width:760px;height:760px"></div>' +
+      cubo(24, 220, 324, 40, 120, CARAS.ahorro, 0) +
+      cubo(354, 220, 72, 40, 120, CARAS.segura, 0.15) +
+      cubo(432, 220, 144, 40, 120, CARAS.recargo, 0.3) +
+      alfiler(x, 60, 124) +
+      '</div></figure>';
+  }
+
+  function titular(res) {
+    var p = res.porcentaje;
+    if (res.zona === 'ahorro') {
+      return ['Ganó el bono.', 'Está ' + puntos(90 - p) + ' por debajo del 90\u00a0%. Si llega a 90\u00a0%, pasa a zona segura y ya no recibe bono.'];
+    }
+    if (res.zona === 'segura') {
+      return ['Sin recargo, sin bono.', 'Le faltan ' + puntos(p - 90) + ' para bajar del 90\u00a0% y ganar el bono.'];
+    }
+    return ['Va a pagar recargo.', 'Está ' + puntos(p - 110) + ' por encima del 110\u00a0% de su meta.'];
+  }
+
+  // Alerta cuando el resultado está a 3 puntos o menos de cambiar de zona.
+  function alertaMargen(res) {
+    var p = res.porcentaje;
+    if (res.zona === 'ahorro' && p >= Meta.LIMITE_AHORRO - 3) return 'Alerta: está a ' + puntos(Meta.LIMITE_AHORRO - p) + ' de perder el bono.';
+    if (res.zona === 'segura' && p >= Meta.LIMITE_RECARGO - 3) return 'Alerta: está a ' + puntos(Meta.LIMITE_RECARGO - p) + ' de pagar recargo.';
+    return '';
+  }
+
+  // Dato en pesos del ciclo; vacío si la factura no tiene tarifa.
+  function datoPesos(r) {
+    var v = Meta.valorEnPesos(r, parametros);
+    if (!v) return '';
+    if (v.bono) return '<div class="dato"><b>' + pesos(v.bono) + '</b><span>bono estimado (' + num(parametros.pctBono, 1) + ' % de lo ahorrado)</span></div>';
+    if (v.recargo) return '<div class="dato"><b>' + pesos(v.recargo) + '</b><span>recargo estimado (' + num(parametros.pctRecargo, 1) + ' % de lo excedido)</span></div>';
+    return '<div class="dato"><b>' + pesos(Math.abs(v.valorDiferencia)) + '</b><span>valor de los kWh ' + (v.valorDiferencia >= 0 ? 'ahorrados' : 'por encima de la meta') + ' a $' + num(v.tarifa, 2) + '/kWh</span></div>';
+  }
+  function trazaPesos(r) {
+    var v = Meta.valorEnPesos(r, parametros);
+    if (!v) return '<p>Sin tarifa: registre la tarifa ($/kWh) de la factura para ver el valor en pesos.</p>';
+    return '<p><code>' + num(v.kwhDiferencia, 1) + ' kWh × $' + num(v.tarifa, 2) + '/kWh = ' + pesos(v.valorDiferencia) + '</code>' +
+      (v.conParametros ? '' : ' · El bono y el recargo en pesos se estiman cuando la Cámara fija sus porcentajes en "Cómo se mide".') + '</p>';
+  }
+
+  // El ciclo más reciente, en el escenario oscuro con la escala 3D.
+  function escenarioCiclo(r) {
+    var res = Meta.evaluar(r);
+    var grupo = Meta.ranking(registros, r.ciclo)[r.tamano] || [];
+    var mio = grupo.filter(function (g) { return g.empresa === r.empresa; })[0];
+    var t = titular(res);
+    var ahorroTxt = res.ahorroKwh >= 0
+      ? '<b>' + num(res.ahorroKwh) + ' kWh</b><span>ahorrados frente a la meta</span>'
+      : '<b>' + num(-res.ahorroKwh) + ' kWh</b><span>por encima de la meta</span>';
+    return '<article class="escenario">' +
+      '<span class="orbe verde" aria-hidden="true" style="width:110px;height:110px;right:-34px;bottom:34%"></span>' +
+      '<span class="orbe cian" aria-hidden="true" style="width:48px;height:48px;left:47%;bottom:150px;animation-delay:-3s"></span>' +
+      '<div class="escenario-cab"><span>Ciclo ' + esc(nombreCiclo(r.ciclo)) + ' · ' + res.dias + ' días</span>' +
+      '<span class="chip ' + res.zona + '">' + NOMBRE_ZONA[res.zona] + '</span></div>' +
+      '<div class="escenario-cuerpo"><div class="escenario-texto">' +
+      '<div class="pct-3d ' + res.zona + '">' + pctCorto(res.porcentaje) + '%</div>' +
+      '<h2 class="titular">' + t[0] + '</h2><p>' + t[1] + '</p>' +
+      (alertaMargen(res) ? '<p class="alerta-margen">' + alertaMargen(res) + '</p>' : '') +
+      '<p>' + CONSEJO[res.zona] + '</p></div>' +
+      escala3d(res.porcentaje) + '</div>' +
+      '<div class="datos">' +
+      '<div class="dato">' + ahorroTxt + '</div>' +
+      datoPesos(r) +
+      '<div class="dato"><b>' + num(res.consumoDiario, 1) + ' / ' + num(r.metaDiaria, 1) + '</b><span>kWh al día, gasto contra meta</span></div>' +
+      (mio ? '<div class="dato"><b>' + mio.puesto + '.º de ' + grupo.length + '</b><span>entre empresas de tamaño ' + esc(r.tamano.toLowerCase()) + '</span></div>' : '') +
+      '<div class="dato"><b>' + num(r.consumoKwh) + '</b><span>kWh en la factura</span></div>' +
+      '</div>' +
+      '<details class="traza"><summary>Ver el cálculo</summary><p><code>(' + num(r.consumoKwh) + ' kWh ÷ ' + res.dias + ' días) ÷ ' +
+      num(r.metaDiaria, 2) + ' kWh/día × 100 = ' + num(res.porcentaje, 1) + ' %</code></p>' +
+      trazaPesos(r) +
+      '<p>Factura ' + esc(r.factura || 'sin número') + ' · periodo ' + esc(r.inicio) + ' a ' + esc(r.fin) +
+      (r.muestra ? ' · dato de muestra' : '') + '</p></details>' +
+      '</article>';
+  }
+
+  // Calculadora del ciclo en curso: con dos lecturas del medidor proyecta el cierre.
+  function proyeccionHtml(r) {
+    var hoy = new Date().toISOString().slice(0, 10);
+    var dias = Meta.evaluar(r).dias;
+    return '<section class="tarjeta proyeccion" aria-labelledby="titulo-proyeccion">' +
+      '<h2 id="titulo-proyeccion">¿Cómo va el ciclo de este mes?</h2>' +
+      '<p class="nota">Copie la lectura de su última factura y la que marca hoy el medidor. Calculamos en qué % de la meta (' + num(r.metaDiaria, 1) + ' kWh/día) cerraría y cuánto puede gastar por día para quedar en ahorro.</p>' +
+      '<form class="form-proyeccion grid-proyeccion" novalidate data-meta="' + r.metaDiaria + '">' +
+      '<label class="campo"><span>Lectura de la última factura</span><input name="lecturaAnterior" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej.: 17431"></label>' +
+      '<label class="campo"><span>Fecha de esa lectura</span><input name="fechaAnterior" type="date" value="' + esc(r.fin) + '"></label>' +
+      '<label class="campo"><span>Lectura del medidor hoy</span><input name="lecturaHoy" type="number" min="0" step="any" inputmode="decimal"></label>' +
+      '<label class="campo"><span>Fecha de hoy</span><input name="fechaHoy" type="date" value="' + hoy + '"></label>' +
+      '<label class="campo"><span>Días del ciclo</span><input name="diasCiclo" type="number" min="1" step="1" value="' + dias + '"></label>' +
+      '</form><div class="resultado-proyeccion" aria-live="polite"></div></section>';
+  }
+  function pintarProyeccion(formP) {
+    var f = new FormData(formP);
+    var meta = parseFloat(formP.dataset.meta);
+    var kwh = parseFloat(f.get('lecturaHoy')) - parseFloat(f.get('lecturaAnterior'));
+    var transcurridos = Meta.diasEntre(f.get('fechaAnterior'), f.get('fechaHoy')) - 1;
+    var diasCiclo = parseInt(f.get('diasCiclo'), 10);
+    var caja = formP.parentNode.querySelector('.resultado-proyeccion');
+    if (isNaN(kwh)) { caja.innerHTML = ''; return; }
+    if (kwh < 0) { caja.innerHTML = '<p class="mensajes err">La lectura de hoy debe ser mayor que la de la factura.</p>'; return; }
+    var p = Meta.proyectarCiclo(meta, kwh, transcurridos, diasCiclo);
+    if (!p) { caja.innerHTML = '<p class="mensajes err">Revise las fechas: hoy debe ser después de la lectura y dentro del ciclo.</p>'; return; }
+    var aviso = p.zona === 'recargo' ? 'Al ritmo actual cerraría en recargo.'
+      : p.zona === 'segura' ? 'Al ritmo actual cerraría sin bono.'
+      : p.porcentaje >= Meta.LIMITE_AHORRO - 3 ? 'Va en ahorro, pero muy cerca del límite.' : 'Va bien: al ritmo actual cerraría en ahorro.';
+    caja.innerHTML = '<div class="proyeccion-cifras">' +
+      '<div class="dato"><b class="z-' + p.zona + '">' + pctCorto(p.porcentaje) + '%</b><span>de la meta al ritmo actual</span></div>' +
+      '<div class="dato"><b>' + num(kwh, 0) + ' kWh</b><span>en ' + transcurridos + ' días (' + num(p.consumoDiario, 1) + ' al día)</span></div>' +
+      (p.diasRestantes ? '<div class="dato"><b>' + num(p.maxDiarioAhorro, 1) + ' kWh/día</b><span>máximo los próximos ' + p.diasRestantes + ' días para cerrar en ahorro</span></div>' : '') +
+      '</div><p class="alerta-proyeccion ' + p.zona + '">' + aviso +
+      (p.diasRestantes && p.maxDiarioAhorro === 0 ? ' Ya no alcanza para el bono este ciclo; para no pagar recargo, gaste máximo ' + num(p.maxDiarioSinRecargo, 1) + ' kWh al día.' : '') + '</p>';
+  }
+
+  function consejosHtml(r) {
+    var consejos = CONSEJOS_SECTOR[r.sector] || CONSEJOS_SECTOR.Otro;
+    return '<section class="tarjeta consejos-sector" aria-labelledby="titulo-consejos">' +
+      '<h2 id="titulo-consejos">Consejos para ' + esc(r.sector || 'su negocio').toLowerCase() + '</h2>' +
+      '<ol>' + consejos.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ol></section>';
+  }
+
+  // Barras 3D de los últimos ciclos de la empresa, con el plano del límite de 90 %.
+  function grafica3d(suyos) {
+    var serie = suyos.slice(0, 6).reverse();
+    if (serie.length < 2) return '';
+    var res = serie.map(function (r) { return Meta.evaluar(r); });
+    var ancho = serie.length * 130 + 80;
+    var barras = serie.map(function (r, i) {
+      var h = Math.round(Math.min(res[i].porcentaje, ESCALA_MAX) * 2.2);
+      return cubo(60 + i * 130, 340 - h, 90, h, 90, CARAS[res[i].zona], i * 0.15);
+    }).join('');
+    var primero = res[0].porcentaje, ultimo = res[res.length - 1].porcentaje;
+    var verbo = ultimo < primero ? 'Bajó' : ultimo > primero ? 'Subió' : 'Se mantuvo';
+    return '<section class="seccion-3d">' +
+      '<div class="seccion-texto"><h2>' + verbo + ' de ' + pctCorto(primero) + ' % a ' + pctCorto(ultimo) + ' % en ' + serie.length + ' ciclos</h2>' +
+      '<p>Cada barra es un ciclo; el plano punteado es el límite del 90 %. Por debajo de él, hay bono.</p>' +
+      '<ul class="leyenda">' + serie.map(function (r, i) {
+        return '<li><span class="cuadro ' + res[i].zona + '"></span>' + esc(nombreCiclo(r.ciclo)) + ' · ' + num(res[i].porcentaje, 1) + ' %</li>';
+      }).join('') + '<li><span class="linea"></span>Límite del 90 %</li></ul></div>' +
+      '<figure class="e3d" role="img" aria-label="Barras por ciclo: ' + serie.map(function (r, i) { return esc(nombreCiclo(r.ciclo)) + ' ' + num(res[i].porcentaje, 1) + ' %'; }).join(', ') + '.">' +
+      '<div class="esc" style="width:' + ancho + 'px;height:380px">' +
+      '<div class="piso claro" style="left:' + (ancho / 2 - 360) + 'px;top:-20px;width:720px;height:720px"></div>' +
+      barras +
+      '<div class="plano-limite" aria-hidden="true" style="left:30px;top:62px;width:' + (ancho - 60) + 'px;height:160px"></div>' +
+      '</div></figure></section>';
+  }
+
+  // Altura de un pilar: lo que la empresa quedó por debajo del 150 % de su meta (más alto = más ahorro).
+  function altoPilar(pct, factor, minimo) {
+    return Math.max(minimo, Math.round((ESCALA_MAX - Math.min(pct, ESCALA_MAX)) * factor));
+  }
+
+  // Pilares de un podio; la empresa resaltada va en color pleno y con el marcador encima.
+  function podioFigura(lista, resaltada, clase) {
+    var ancho = lista.length * 130 + 60;
+    var miIndice = -1;
+    var pilares = lista.map(function (g, i) {
+      var yo = g.empresa === resaltada;
+      if (yo) miIndice = i;
+      var z = g.resultado.zona;
+      var h = altoPilar(g.resultado.porcentaje, 3, 30);
+      return cubo(30 + i * 130, 330 - h, 100, h, 100, CARAS[yo ? z : z + 'Suave'], i * 0.1, g.puesto, yo ? CARAS_TEXTO[z] : '');
+    }).join('');
+    var miAlto = miIndice < 0 ? 0 : altoPilar(lista[miIndice].resultado.porcentaje, 3, 30);
+    return '<figure class="e3d ' + clase + '" role="img" aria-label="Podio: ' + lista.map(function (g) { return g.puesto + ' ' + esc(g.empresa) + ' ' + num(g.resultado.porcentaje, 1) + ' %'; }).join(', ') + '.">' +
+      '<div class="esc" style="width:' + ancho + 'px;height:400px">' +
+      '<div class="piso claro" style="left:' + (ancho / 2 - 380) + 'px;top:-50px;width:760px;height:760px"></div>' +
+      pilares +
+      (miIndice >= 0 ? alfiler(80 + miIndice * 130, 330 - miAlto - 120, 70, true) : '') +
+      '</div></figure>';
+  }
+
+  // Ciudad 3D del ranking: una fila por tamaño (Micro al fondo, Grande al frente), un edificio por empresa.
+  function ciudad3d(grupos) {
+    var columnas = 1;
+    Meta.TAMANOS.forEach(function (t) { columnas = Math.max(columnas, Math.min(grupos[t].length, 6)); });
+    var ancho = 180 + columnas * 88 + 30;
+    var filas = Meta.TAMANOS.map(function (t, f) {
+      var z = Math.round((f - (Meta.TAMANOS.length - 1) / 2) * 100);
+      // Letrero de pie con el nombre del tamaño: el de atrás asoma por encima del de adelante.
+      var placa = cubo(10, 200, 116, 40, 6, ['#e3f2ed', '#9dbdb4', '#ffffff'], f * 0.12, '<span class="placa">' + esc(t) + '</span>');
+      var edificios = grupos[t].slice(0, 6).map(function (g, i) {
+        var h = altoPilar(g.resultado.porcentaje, 1.6, 18);
+        return cubo(185 + i * 88, 240 - h, 56, h, 56, CARAS[g.resultado.zona], f * 0.12 + i * 0.06, g.puesto);
+      }).join('');
+      return '<div class="fila3d" style="transform:translateZ(' + z + 'px)">' + placa + edificios + '</div>';
+    }).join('');
+    return '<figure class="e3d alta" role="img" aria-label="Ciudad del ranking: una fila por tamaño, un edificio por empresa, más alto quien más ahorró. Verde ahorro, cian zona segura, rojo recargo.">' +
+      '<div class="esc" style="width:' + ancho + 'px;height:320px">' +
+      '<div class="piso" style="left:' + (ancho / 2 - 400) + 'px;top:-160px;width:800px;height:800px"></div>' +
+      filas + '</div></figure>';
+  }
+
+  // Escenario oscuro del ranking: total ahorrado en relieve y la ciudad 3D.
+  function escenarioRanking(ciclo, grupos, todos) {
+    var ahorro = 0, zonas = { ahorro: 0, segura: 0, recargo: 0 };
+    todos.forEach(function (r) {
+      ahorro += r.resultado.ahorroKwh;
+      zonas[r.resultado.zona]++;
+    });
+    var titular = zonas.ahorro + ' en ahorro, ' + zonas.recargo + ' en recargo.';
+    return '<article class="escenario">' +
+      '<span class="orbe verde" aria-hidden="true" style="width:110px;height:110px;right:-34px;bottom:34%"></span>' +
+      '<span class="orbe cian" aria-hidden="true" style="width:48px;height:48px;left:47%;bottom:150px;animation-delay:-3s"></span>' +
+      '<div class="escenario-cab"><span>Ciclo ' + esc(nombreCiclo(ciclo)) + ' · ' + todos.length + ' empresas</span></div>' +
+      '<div class="escenario-cuerpo"><div class="escenario-texto">' +
+      '<div class="pct-3d total ' + (ahorro >= 0 ? 'ahorro' : 'recargo') + '">' + num(Math.abs(ahorro)) + '</div>' +
+      '<h2 class="titular">kWh ' + (ahorro >= 0 ? 'ahorrados' : 'por encima') + ' frente a las metas</h2>' +
+      '<p>' + titular + ' Cada edificio es una empresa: más alto, más ahorro. Las filas van por tamaño, de micro (al fondo) a grande (al frente).</p>' +
+      '<ul class="leyenda oscura"><li><span class="cuadro ahorro"></span>Ahorro</li><li><span class="cuadro segura"></span>Segura</li><li><span class="cuadro recargo"></span>Recargo</li></ul>' +
+      '</div>' + ciudad3d(grupos) + '</div>' +
+      '<div class="datos">' +
+      '<div class="dato"><b>' + todos.length + '</b><span>empresas medidas</span></div>' +
+      '<div class="dato"><b>' + zonas.ahorro + '</b><span>en ahorro (bono)</span></div>' +
+      '<div class="dato"><b>' + zonas.segura + '</b><span>en zona segura</span></div>' +
+      '<div class="dato"><b>' + zonas.recargo + '</b><span>en recargo</span></div>' +
+      '</div></article>';
+  }
+
+  // Podio 3D del grupo de tamaño: más alto = más lejos del 150 % = más ahorro.
+  function podio3d(r) {
+    var grupo = Meta.ranking(registros, r.ciclo)[r.tamano] || [];
+    if (grupo.length < 2) return '';
+    var lista = grupo.slice(0, 5);
+    var mio = grupo.filter(function (g) { return g.empresa === r.empresa; })[0];
+    if (mio && mio.puesto > 5) lista = grupo.slice(0, 4).concat([mio]);
+    var titulo = mio ? 'Puesto ' + mio.puesto + ' de ' + grupo.length + ' entre empresas de tamaño ' + esc(r.tamano.toLowerCase())
+      : 'Ranking de empresas de tamaño ' + esc(r.tamano.toLowerCase());
+    return '<section class="seccion-3d invertida">' +
+      podioFigura(lista, r.empresa, '') +
+      '<div class="seccion-texto"><h2>' + titulo + '</h2>' +
+      '<ol class="podio-lista">' + lista.map(function (g) {
+        var yo = g.empresa === r.empresa;
+        return '<li' + (yo ? ' class="yo"' : '') + '><span>' + g.puesto + ' · ' + esc(g.empresa) + (yo ? ' (usted)' : '') + '</span><span>' + num(g.resultado.porcentaje, 1) + ' %</span></li>';
+      }).join('') + '</ol>' +
+      '<p>La altura de cada bloque es cuánto quedó la empresa por debajo del 150 % de su meta: más alto, más ahorro. Ciclo ' + esc(nombreCiclo(r.ciclo)) + '.</p></div>' +
+      '</section>';
+  }
+
   function tarjetaCiclo(r) {
     var res = Meta.evaluar(r);
     var grupo = Meta.ranking(registros, r.ciclo)[r.tamano] || [];
@@ -122,10 +457,17 @@
     var suyos = registros.filter(function (r) { return r.empresa === emp; })
       .sort(function (a, b) { return a.ciclo < b.ciclo ? 1 : -1; });
     $('#tablero').innerHTML = suyos.length
-      ? '<div class="ciclos">' + suyos.map(tarjetaCiclo).join('') + '</div>'
+      ? escenarioCiclo(suyos[0]) +
+        '<div class="herramientas">' + proyeccionHtml(suyos[0]) + consejosHtml(suyos[0]) + '</div>' +
+        grafica3d(suyos) + podio3d(suyos[0]) +
+        (suyos.length > 1 ? '<h2 class="subtitulo-ciclos">Ciclos anteriores</h2><div class="ciclos">' + suyos.slice(1).map(tarjetaCiclo).join('') + '</div>' : '')
       : '<p class="vacio">Esta empresa aún no tiene ciclos registrados.</p>';
   }
   $('#sel-empresa').addEventListener('change', function () { pintarTablero(); });
+  $('#tablero').addEventListener('input', function (ev) {
+    var formP = ev.target.closest('.form-proyeccion');
+    if (formP) pintarProyeccion(formP);
+  });
 
   /* ---------- Registro ---------- */
   var form = $('#form-registro');
@@ -146,7 +488,8 @@
       inicio: d.get('inicio'),
       fin: d.get('fin'),
       consumoKwh: parseFloat(d.get('consumoKwh')),
-      metaDiaria: parseFloat(d.get('metaDiaria'))
+      metaDiaria: parseFloat(d.get('metaDiaria')),
+      tarifaKwh: parseFloat(d.get('tarifaKwh')) || null
     };
   }
 
@@ -154,19 +497,46 @@
     return items.length ? '<ul class="mensajes ' + clase + '">' + items.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>' : '';
   }
 
+  // Resultado en vivo: el escenario se arma una vez y luego solo se mueven el marcador y los textos,
+  // para que los bloques no vuelvan a crecer con cada tecla.
+  function previa3d(res) {
+    var t = titular(res);
+    return '<article class="escenario previa">' +
+      '<div class="escenario-cab"><span class="previa-dias">Resultado del ciclo · ' + res.dias + ' días</span>' +
+      '<span class="chip ' + res.zona + '">' + NOMBRE_ZONA[res.zona] + '</span></div>' +
+      '<div class="escenario-cuerpo"><div class="escenario-texto">' +
+      '<div class="pct-3d ' + res.zona + '">' + pctCorto(res.porcentaje) + '%</div>' +
+      '<h2 class="titular">' + t[0] + '</h2><p class="previa-detalle">' + t[1] + '</p></div>' +
+      escala3d(res.porcentaje) + '</div></article>';
+  }
+  function actualizarPrevia(caja, res) {
+    var t = titular(res);
+    caja.querySelector('.previa-dias').textContent = 'Resultado del ciclo · ' + res.dias + ' días';
+    var chip = caja.querySelector('.escenario-cab .chip');
+    chip.className = 'chip ' + res.zona;
+    chip.innerHTML = NOMBRE_ZONA[res.zona];
+    var pct = caja.querySelector('.pct-3d');
+    pct.className = 'pct-3d ' + res.zona;
+    pct.textContent = pctCorto(res.porcentaje) + '%';
+    caja.querySelector('.titular').textContent = t[0];
+    caja.querySelector('.previa-detalle').textContent = t[1];
+    caja.querySelector('.e3d .flota').style.left = (xEscala(res.porcentaje) - 20) + 'px';
+    caja.querySelector('.e3d').setAttribute('aria-label', 'Escala de zonas: ahorro hasta 90 %, segura de 90 a 110 %, recargo desde 110 %. Su empresa quedó en ' + num(res.porcentaje, 1) + ' %.');
+  }
+
   function vistaPrevia(mostrarErrores) {
     var r = leerForm();
     var v = Meta.validar(r);
-    var html = '';
+    var caja = $('#vista-previa');
+    var mensajes = lista(v.alertas, 'alerta') + (mostrarErrores ? lista(v.errores, 'err') : '');
     if (v.valido) {
       var res = Meta.evaluar(r);
-      html = '<div class="tarjeta"><span class="ciclo-titulo">Resultado</span>' +
-        '<div class="resultado"><div><div class="pct">' + num(res.porcentaje, 1) + '<small> % de la meta</small></div>' +
-        '<span class="chip ' + res.zona + '">' + NOMBRE_ZONA[res.zona] + '</span></div>' + barra(res.porcentaje) + '</div></div>';
+      if (caja.querySelector('.escenario')) actualizarPrevia(caja, res);
+      else caja.innerHTML = previa3d(res) + '<div class="previa-mensajes"></div>';
+      caja.querySelector('.previa-mensajes').innerHTML = mensajes;
+    } else {
+      caja.innerHTML = mensajes;
     }
-    html += lista(v.alertas, 'alerta');
-    if (mostrarErrores) html += lista(v.errores, 'err');
-    $('#vista-previa').innerHTML = html;
     return v;
   }
   form.addEventListener('input', function () { vistaPrevia(false); });
@@ -235,30 +605,25 @@
     var todos = [];
     Meta.TAMANOS.forEach(function (t) { todos = todos.concat(grupos[t]); });
 
-    var ahorro = 0, zonas = { ahorro: 0, segura: 0, recargo: 0 };
-    todos.forEach(function (r) {
-      ahorro += r.resultado.ahorroKwh;
-      zonas[r.resultado.zona]++;
-    });
-    $('#resumen-ciudad').innerHTML =
-      '<div class="kpi"><b>' + todos.length + '</b><span>empresas medidas</span></div>' +
-      '<div class="kpi"><b>' + num(ahorro) + '</b><span>kWh ' + (ahorro >= 0 ? 'ahorrados' : 'por encima') + ' frente a las metas</span></div>' +
-      '<div class="kpi"><b>' + zonas.ahorro + '</b><span>en ahorro (bono)</span></div>' +
-      '<div class="kpi"><b>' + zonas.recargo + '</b><span>en recargo</span></div>';
+    $('#resumen-ciudad').innerHTML = todos.length
+      ? escenarioRanking(ciclo, grupos, todos)
+      : '<p class="vacio">No hay empresas registradas en este ciclo.</p>';
 
     $('#ranking').innerHTML = Meta.TAMANOS.map(function (t) {
       var g = grupos[t];
       var filas = g.map(function (r) {
-        return '<tr class="' + (r.puesto === 1 ? 'top1' : '') + '">' +
-          '<td class="puesto">' + r.puesto + '</td>' +
-          '<td><button class="btn-link" data-empresa="' + esc(r.empresa) + '">' + esc(r.empresa) + '</button></td>' +
-          '<td class="num">' + num(r.resultado.porcentaje, 1) + ' %</td>' +
-          '<td class="num">' + num(r.resultado.ahorroKwh) + '</td>' +
-          '<td><span class="chip ' + r.resultado.zona + '">' + NOMBRE_ZONA[r.resultado.zona] + '</span></td></tr>';
+        // data-label da la etiqueta de cada dato cuando la fila se apila en celular.
+        return '<tr role="row" class="' + (r.puesto === 1 ? 'top1' : '') + '">' +
+          '<td role="cell" class="puesto">' + r.puesto + '</td>' +
+          '<td role="cell" class="empresa"><button class="btn-link" data-empresa="' + esc(r.empresa) + '">' + esc(r.empresa) + '</button></td>' +
+          '<td role="cell" class="num" data-label="% meta">' + num(r.resultado.porcentaje, 1) + ' %</td>' +
+          '<td role="cell" class="num" data-label="kWh ahorrados">' + num(r.resultado.ahorroKwh) + '</td>' +
+          '<td role="cell" class="zona"><span class="chip ' + r.resultado.zona + '">' + NOMBRE_ZONA[r.resultado.zona] + '</span></td></tr>';
       }).join('');
       return '<section class="tarjeta"><h3>' + t + '</h3>' +
+        (g.length > 1 ? podioFigura(g.slice(0, 5), g[0].empresa, 'mini') : '') +
         (g.length
-          ? '<div class="tabla-wrap"><table><thead><tr><th>#</th><th>Empresa</th><th class="num">% meta</th><th class="num">kWh ahorrados</th><th>Zona</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
+          ? '<div class="tabla-wrap"><table role="table"><thead role="rowgroup"><tr role="row"><th role="columnheader">#</th><th role="columnheader">Empresa</th><th role="columnheader" class="num">% meta</th><th role="columnheader" class="num">kWh ahorrados</th><th role="columnheader">Zona</th></tr></thead><tbody role="rowgroup">' + filas + '</tbody></table></div>'
           : '<p class="vacio">Sin empresas de este tamaño en el ciclo.</p>') +
         '</section>';
     }).join('');
@@ -271,17 +636,21 @@
     pintarTablero(b.dataset.empresa);
   });
 
+  function pesosCsv(v) { return v ? v.valorDiferencia : ''; }
+
   // CSV con entradas y resultados, para recalcular en una hoja de cálculo.
   function armarCsv(ciclo) {
     var grupos = Meta.ranking(registros, ciclo);
     var cab = ['ciclo', 'tamano', 'puesto', 'empresa', 'nit', 'sector', 'factura', 'inicio', 'fin', 'dias',
-      'consumo_kwh', 'meta_kwh_dia', 'consumo_kwh_dia', 'pct_meta', 'ahorro_kwh', 'zona', 'dato_de_muestra'];
+      'consumo_kwh', 'meta_kwh_dia', 'consumo_kwh_dia', 'pct_meta', 'ahorro_kwh', 'zona', 'dato_de_muestra',
+      'tarifa_kwh', 'valor_diferencia_pesos'];
     var lineas = [cab.join(';')];
     Meta.TAMANOS.forEach(function (t) {
       grupos[t].forEach(function (r) {
         var x = r.resultado;
         lineas.push([r.ciclo, r.tamano, r.puesto, r.empresa, r.nit, r.sector, r.factura, r.inicio, r.fin, x.dias,
-          r.consumoKwh, r.metaDiaria, x.consumoDiario, x.porcentaje, x.ahorroKwh, x.zona, r.muestra ? 'si' : 'no']
+          r.consumoKwh, r.metaDiaria, x.consumoDiario, x.porcentaje, x.ahorroKwh, x.zona, r.muestra ? 'si' : 'no',
+          r.tarifaKwh || '', pesosCsv(Meta.valorEnPesos(r, parametros))]
           .map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(';'));
       });
     });
@@ -309,6 +678,99 @@
     try {
       navigator.clipboard.writeText(texto).then(listo, manual);
     } catch (e) { manual(); }
+  });
+
+  /* ---------- Leer la factura con IA (solo si el servidor la tiene activa) ---------- */
+  var LADO_MAXIMO = 2000;   // px: suficiente para leer la factura y liviano de enviar
+  var PDF_MAXIMO = 8 * 1024 * 1024;
+
+  // Las fotos se reducen y pasan a JPEG en el navegador antes de enviarlas.
+  function fotoComoJpeg(archivo) {
+    return createImageBitmap(archivo).then(function (img) {
+      var escala = Math.min(1, LADO_MAXIMO / Math.max(img.width, img.height));
+      var lienzo = document.createElement('canvas');
+      lienzo.width = Math.round(img.width * escala);
+      lienzo.height = Math.round(img.height * escala);
+      lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
+      return { tipo: 'image/jpeg', datos: lienzo.toDataURL('image/jpeg', 0.85).split(',')[1] };
+    });
+  }
+  function pdfComoBase64(archivo) {
+    return new Promise(function (resolver, rechazar) {
+      var lector = new FileReader();
+      lector.onload = function () { resolver({ tipo: 'application/pdf', datos: String(lector.result).split(',')[1] }); };
+      lector.onerror = rechazar;
+      lector.readAsDataURL(archivo);
+    });
+  }
+
+  function estadoLectura(html, clase) {
+    var caja = $('#estado-lectura');
+    caja.className = 'estado-lectura ' + (clase || '');
+    caja.innerHTML = html;
+  }
+
+  function llenarConLectura(datos) {
+    var llenos = [];
+    [['factura', datos.factura], ['inicio', datos.inicio], ['fin', datos.fin], ['ciclo', datos.ciclo],
+      ['consumoKwh', datos.consumoKwh], ['metaDiaria', datos.metaDiaria], ['tarifaKwh', datos.tarifaKwh]].forEach(function (par) {
+      var campo = form[par[0]];
+      campo.classList.remove('autollenado');
+      if (par[1] == null || par[1] === '') return;
+      campo.value = par[1];
+      campo.classList.add('autollenado');
+      llenos.push(par[0]);
+    });
+    vistaPrevia(false);
+    return llenos.length;
+  }
+
+  $('#archivo-factura').addEventListener('change', function (ev) {
+    var archivo = ev.target.files[0];
+    ev.target.value = '';
+    if (!archivo) return;
+    var esPdf = archivo.type === 'application/pdf';
+    if (esPdf && archivo.size > PDF_MAXIMO) return estadoLectura('El PDF pesa más de 8 MB. Use una foto de la factura.', 'err');
+    estadoLectura('Leyendo la factura… puede tardar unos segundos.', 'cargando');
+    (esPdf ? pdfComoBase64(archivo) : fotoComoJpeg(archivo))
+      .catch(function () { throw new Error('No pude abrir esa imagen. Si es una foto de iPhone, tómela otra vez o envíe una captura de pantalla.'); })
+      .then(function (cuerpo) {
+        return fetch('api/leer-factura', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+          .catch(function () { throw new Error('No hubo conexión. Revise el internet e intente de nuevo.'); });
+      })
+      .then(function (resp) {
+        return resp.json().catch(function () { return {}; }).then(function (r) {
+          if (!resp.ok) throw new Error(r.error || 'No se pudo leer la factura.');
+          return r;
+        });
+      })
+      .then(function (r) {
+        var n = llenarConLectura(r.datos);
+        estadoLectura('<p><b>Listo: llenamos ' + n + ' campos.</b> Revíselos contra la factura antes de guardar; los llenados van resaltados.</p>' +
+          lista(r.avisos || [], 'alerta'), 'ok');
+      })
+      .catch(function (e) { estadoLectura(esc(e.message), 'err'); });
+  });
+
+  // Si el servidor no tiene la lectura con IA (o la página se abre como archivo), el botón no aparece.
+  if (location.protocol !== 'file:') {
+    fetch('api/estado').then(function (r) { return r.json(); })
+      .then(function (e) { if (e && e.lecturaConIA) $('#leer-factura').hidden = false; })
+      .catch(function () { /* sin servidor: el registro sigue siendo manual */ });
+  }
+
+  /* ---------- Parámetros del valor en pesos ---------- */
+  var formParametros = $('#form-parametros');
+  formParametros.pctBono.value = parametros.pctBono || '';
+  formParametros.pctRecargo.value = parametros.pctRecargo || '';
+  formParametros.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    parametros = {
+      pctBono: Math.max(0, parseFloat(formParametros.pctBono.value) || 0),
+      pctRecargo: Math.max(0, parseFloat(formParametros.pctRecargo.value) || 0)
+    };
+    try { localStorage.setItem(CLAVE_PARAMETROS, JSON.stringify(parametros)); } catch (e) { /* modo privado */ }
+    $('#estado-parametros').textContent = 'Guardado. El tablero y el CSV ya usan estos porcentajes.';
   });
 
   mostrar('tablero');

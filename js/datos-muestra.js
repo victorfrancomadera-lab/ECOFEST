@@ -1,4 +1,5 @@
-/* Datos de muestra ficticios: facturas de ejemplo sin datos personales. */
+/* Datos de muestra ficticios: facturas de ejemplo sin datos personales.
+   La tarifa (773,523 $/kWh) es la de "Consumo activa" de una factura residencial real de Air-e de octubre de 2025: sirve de ejemplo, no es la tarifa comercial de cada empresa. */
 window.DATOS_MUESTRA = [
  {
   "id": "m1",
@@ -13,6 +14,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 620,
   "factura": "MUESTRA-202609-001",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -28,6 +30,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 389,
   "factura": "MUESTRA-202610-001",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -43,6 +46,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 568,
   "factura": "MUESTRA-202609-002",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -58,6 +62,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 353,
   "factura": "MUESTRA-202610-002",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -73,6 +78,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 445,
   "factura": "MUESTRA-202609-003",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -88,6 +94,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 276,
   "factura": "MUESTRA-202610-003",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -103,6 +110,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 262,
   "factura": "MUESTRA-202609-004",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -118,6 +126,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 162,
   "factura": "MUESTRA-202610-004",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -133,6 +142,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 4910,
   "factura": "MUESTRA-202609-005",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -148,6 +158,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 3050,
   "factura": "MUESTRA-202610-005",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -163,6 +174,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 4831,
   "factura": "MUESTRA-202609-006",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -178,6 +190,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 3021,
   "factura": "MUESTRA-202610-006",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -193,6 +206,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 2948,
   "factura": "MUESTRA-202609-007",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -208,6 +222,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 1849,
   "factura": "MUESTRA-202610-007",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -223,6 +238,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 1862,
   "factura": "MUESTRA-202609-008",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -238,6 +254,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 1139,
   "factura": "MUESTRA-202610-008",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -253,6 +270,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 30576,
   "factura": "MUESTRA-202609-009",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -268,6 +286,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 18816,
   "factura": "MUESTRA-202610-009",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -283,6 +302,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 13418,
   "factura": "MUESTRA-202609-010",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -298,6 +318,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 8527,
   "factura": "MUESTRA-202610-010",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -313,6 +334,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 34451,
   "factura": "MUESTRA-202609-011",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -328,6 +350,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 21616,
   "factura": "MUESTRA-202610-011",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -343,6 +366,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 15790,
   "factura": "MUESTRA-202609-012",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -358,6 +382,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 9792,
   "factura": "MUESTRA-202610-012",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -373,6 +398,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 337725,
   "factura": "MUESTRA-202609-013",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -388,6 +414,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 208560,
   "factura": "MUESTRA-202610-013",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -403,6 +430,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 266976,
   "factura": "MUESTRA-202609-014",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -418,6 +446,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 160704,
   "factura": "MUESTRA-202610-014",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -433,6 +462,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 481152,
   "factura": "MUESTRA-202609-015",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -448,6 +478,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 312176,
   "factura": "MUESTRA-202610-015",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -463,6 +494,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 87042,
   "factura": "MUESTRA-202609-016",
   "creado": "2026-09-30T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  },
  {
@@ -478,6 +510,7 @@ window.DATOS_MUESTRA = [
   "consumoKwh": 55420,
   "factura": "MUESTRA-202610-016",
   "creado": "2026-10-20T18:00:00Z",
+  "tarifaKwh": 773.523,
   "muestra": true
  }
 ];

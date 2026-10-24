@@ -116,6 +116,60 @@
     return grupos;
   }
 
+  /*
+   * Valor en pesos de un ciclo. Es un ESTIMADO: la regla oficial del bono y del recargo
+   * en pesos aún no está publicada, así que sus porcentajes son parámetros que fija la Cámara.
+   * - Diferencia: (meta del ciclo − consumo) × tarifa. Positiva = lo que dejó de gastar.
+   * - Bono: kWh por debajo de la meta × tarifa × % de bono, solo en zona de ahorro.
+   * - Recargo: kWh por encima del 110 % de la meta × tarifa × % de recargo, solo en zona de recargo.
+   * Sin tarifa devuelve null.
+   */
+  function valorEnPesos(r, parametros) {
+    var tarifa = Number(r.tarifaKwh);
+    if (!(tarifa > 0)) return null;
+    var res = evaluar(r);
+    var p = parametros || {};
+    var pctBono = Number(p.pctBono) > 0 ? Number(p.pctBono) : 0;
+    var pctRecargo = Number(p.pctRecargo) > 0 ? Number(p.pctRecargo) : 0;
+    var metaCiclo = r.metaDiaria * res.dias;
+    var kwhDiferencia = metaCiclo - r.consumoKwh;
+    var kwhSobreRecargo = Math.max(0, r.consumoKwh - metaCiclo * LIMITE_RECARGO / 100);
+    return {
+      tarifa: tarifa,
+      kwhDiferencia: redondear(kwhDiferencia, 1),
+      valorDiferencia: Math.round(kwhDiferencia * tarifa),
+      bono: res.zona === 'ahorro' && pctBono ? Math.round(kwhDiferencia * tarifa * pctBono / 100) : 0,
+      recargo: res.zona === 'recargo' && pctRecargo ? Math.round(kwhSobreRecargo * tarifa * pctRecargo / 100) : 0,
+      kwhSobreRecargo: redondear(kwhSobreRecargo, 1),
+      conParametros: pctBono > 0 && pctRecargo > 0
+    };
+  }
+
+  /*
+   * Proyección del ciclo en curso a partir de una lectura parcial del medidor.
+   * Al ritmo actual, ¿en qué % de la meta cierra? Y cuánto puede gastar por día
+   * el resto del ciclo para cerrar en ahorro (debajo de 90 %) o sin recargo (hasta 110 %).
+   */
+  function proyectarCiclo(metaDiaria, kwhHastaHoy, diasTranscurridos, diasCiclo) {
+    if (!(metaDiaria > 0) || !(kwhHastaHoy >= 0) || !(diasTranscurridos > 0) || !(diasCiclo >= diasTranscurridos)) return null;
+    var diario = kwhHastaHoy / diasTranscurridos;
+    var porcentaje = diario / metaDiaria * 100;
+    var restantes = diasCiclo - diasTranscurridos;
+    function maximoDiario(limite) {
+      if (!restantes) return null;
+      return redondear(Math.max(0, (metaDiaria * diasCiclo * limite / 100 - kwhHastaHoy) / restantes), 1);
+    }
+    return {
+      consumoDiario: redondear(diario, 2),
+      porcentaje: redondear(porcentaje, 1),
+      zona: zonaDe(porcentaje),
+      kwhAlCierre: redondear(diario * diasCiclo, 1),
+      diasRestantes: restantes,
+      maxDiarioAhorro: maximoDiario(LIMITE_AHORRO),
+      maxDiarioSinRecargo: maximoDiario(LIMITE_RECARGO)
+    };
+  }
+
   var Meta = {
     LIMITE_AHORRO: LIMITE_AHORRO,
     LIMITE_RECARGO: LIMITE_RECARGO,
@@ -126,7 +180,9 @@
     zonaDe: zonaDe,
     validar: validar,
     evaluar: evaluar,
-    ranking: ranking
+    ranking: ranking,
+    valorEnPesos: valorEnPesos,
+    proyectarCiclo: proyectarCiclo
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = Meta;

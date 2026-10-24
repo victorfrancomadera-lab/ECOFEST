@@ -56,3 +56,45 @@ test('ranking separa por tamaño, ordena por % y usa el último registro', () =>
   assert.deepStrictEqual(g.Grande.map(r => r.puesto), [1]);
   assert.strictEqual(g.Pequeña.length, 0);
 });
+
+test('valor en pesos: diferencia, bono y recargo con parámetros', () => {
+  // 85 kWh/día sobre meta 100 en 30 días: 450 kWh por debajo de la meta.
+  const ahorro = Meta.valorEnPesos({ ...base, consumoKwh: 2550, tarifaKwh: 800 }, { pctBono: 10, pctRecargo: 20 });
+  assert.strictEqual(ahorro.kwhDiferencia, 450);
+  assert.strictEqual(ahorro.valorDiferencia, 360000);
+  assert.strictEqual(ahorro.bono, 36000);
+  assert.strictEqual(ahorro.recargo, 0);
+  // 120 kWh/día: 3600 kWh contra 3300 del 110 % → 300 kWh sobre el límite.
+  const recargo = Meta.valorEnPesos({ ...base, consumoKwh: 3600, tarifaKwh: 800 }, { pctBono: 10, pctRecargo: 20 });
+  assert.strictEqual(recargo.kwhSobreRecargo, 300);
+  assert.strictEqual(recargo.recargo, 48000);
+  assert.strictEqual(recargo.bono, 0);
+  assert.strictEqual(recargo.valorDiferencia, -480000);
+  // Zona segura: ni bono ni recargo.
+  const segura = Meta.valorEnPesos({ ...base, consumoKwh: 3000, tarifaKwh: 800 }, { pctBono: 10, pctRecargo: 20 });
+  assert.strictEqual(segura.bono + segura.recargo, 0);
+});
+
+test('valor en pesos: sin tarifa no hay valor; sin porcentajes no hay bono', () => {
+  assert.strictEqual(Meta.valorEnPesos({ ...base, consumoKwh: 2550 }), null);
+  const v = Meta.valorEnPesos({ ...base, consumoKwh: 2550, tarifaKwh: 800 });
+  assert.strictEqual(v.bono, 0);
+  assert.strictEqual(v.conParametros, false);
+  assert.strictEqual(v.valorDiferencia, 360000);
+});
+
+test('proyección del ciclo en curso y máximos diarios', () => {
+  // Meta 100 kWh/día, ciclo de 30 días; en 10 días lleva 950 kWh (95 kWh/día).
+  const p = Meta.proyectarCiclo(100, 950, 10, 30);
+  assert.strictEqual(p.porcentaje, 95);
+  assert.strictEqual(p.zona, 'segura');
+  assert.strictEqual(p.kwhAlCierre, 2850);
+  assert.strictEqual(p.diasRestantes, 20);
+  assert.strictEqual(p.maxDiarioAhorro, 87.5);   // (2700 − 950) / 20
+  assert.strictEqual(p.maxDiarioSinRecargo, 117.5); // (3300 − 950) / 20
+  // Si ya se pasó del tope, el máximo es cero, no negativo.
+  assert.strictEqual(Meta.proyectarCiclo(100, 2800, 25, 30).maxDiarioAhorro, 0);
+  // Datos imposibles.
+  assert.strictEqual(Meta.proyectarCiclo(100, 500, 0, 30), null);
+  assert.strictEqual(Meta.proyectarCiclo(100, 500, 31, 30), null);
+});
