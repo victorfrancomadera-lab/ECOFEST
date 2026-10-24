@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Medidor del Pacto · Barranquilla No Se Apaga</title>
+  <meta name="description" content="Tablero de consumo contra meta y ranking de ahorro de energía de las empresas de la Cámara de Comercio de Barranquilla.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <div class="brand">
+        <span class="brand-kicker">Barranquilla No Se Apaga</span>
+        <span class="brand-name">Medidor del Pacto</span>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab" role="tab" data-vista="tablero" aria-selected="true">Mi empresa</button>
+        <button class="tab" role="tab" data-vista="registrar" aria-selected="false">Registrar factura</button>
+        <button class="tab" role="tab" data-vista="ranking" aria-selected="false">Ranking</button>
+        <button class="tab" role="tab" data-vista="metodo" aria-selected="false">Cómo se mide</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- TABLERO -->
+    <section id="vista-tablero" class="vista">
+      <div class="encabezado">
+        <p class="kicker">Tablero de consumo contra meta</p>
+        <h1>¿Cómo va su empresa este ciclo?</h1>
+      </div>
+      <label class="campo campo-ancho">
+        <span>Empresa</span>
+        <select id="sel-empresa"></select>
+      </label>
+      <div id="tablero"></div>
+    </section>
+
+    <!-- REGISTRAR -->
+    <section id="vista-registrar" class="vista" hidden>
+      <div class="encabezado">
+        <p class="kicker">Registro de un ciclo</p>
+        <h1>Copie cinco datos de su factura</h1>
+        <p class="lead">Todo sale de la factura de energía. Si no encuentra la meta, abajo la calculamos con sus facturas anteriores.</p>
+      </div>
+      <form id="form-registro" class="tarjeta form" novalidate>
+        <div class="grid2">
+          <label class="campo"><span>Nombre de la empresa</span><input name="empresa" list="lista-empresas" required autocomplete="organization"></label>
+          <label class="campo"><span>NIT</span><input name="nit" inputmode="numeric" placeholder="900123456-7"></label>
+          <label class="campo"><span>Tamaño</span>
+            <select name="tamano" required>
+              <option value="">Escoja…</option>
+              <option>Micro</option><option>Pequeña</option><option>Mediana</option><option>Grande</option>
+            </select>
+          </label>
+          <label class="campo"><span>Sector</span>
+            <select name="sector">
+              <option>Comercio</option><option>Alimentos</option><option>Servicios</option><option>Industria</option>
+              <option>Turismo</option><option>Salud</option><option>Educación</option><option>Otro</option>
+            </select>
+          </label>
+        </div>
+        <hr>
+        <div class="grid2">
+          <label class="campo"><span>Número de factura</span><input name="factura" placeholder="Como aparece en la factura"></label>
+          <label class="campo"><span>Mes del ciclo</span><input name="ciclo" type="month" required></label>
+          <label class="campo"><span>Inicio del periodo facturado</span><input name="inicio" type="date" required></label>
+          <label class="campo"><span>Fecha de lectura (fin)</span><input name="fin" type="date" required></label>
+          <label class="campo"><span>Consumo del periodo (kWh)</span><input name="consumoKwh" type="number" min="0" step="any" inputmode="decimal" required></label>
+          <label class="campo"><span>Meta de consumo (kWh por día)</span><input name="metaDiaria" type="number" min="0" step="any" inputmode="decimal" required></label>
+        </div>
+
+        <details class="ayuda-meta">
+          <summary>No encuentro la meta en mi factura</summary>
+          <p>La meta es la mediana de su consumo diario en los 12 meses anteriores. Pegue una factura por línea: <code>kWh, días</code>.</p>
+          <textarea id="historial" rows="6" placeholder="3200, 30&#10;3050, 31&#10;2980, 29"></textarea>
+          <div class="fila">
+            <button type="button" class="btn btn-sec" id="btn-calcular-meta">Calcular meta</button>
+            <span id="res-meta" class="nota"></span>
+          </div>
+        </details>
+
+        <div id="vista-previa" class="vista-previa" aria-live="polite"></div>
+        <div class="fila">
+          <button type="submit" class="btn">Guardar y ver tablero</button>
+        </div>
+      </form>
+      <datalist id="lista-empresas"></datalist>
+    </section>
+
+    <!-- RANKING -->
+    <section id="vista-ranking" class="vista" hidden>
+      <div class="encabezado">
+        <p class="kicker">Ranking de la Cámara</p>
+        <h1>Quién ahorra más, entre empresas de su tamaño</h1>
+      </div>
+      <div class="fila controles">
+        <label class="campo"><span>Ciclo</span><select id="sel-ciclo"></select></label>
+        <button class="btn btn-sec" id="btn-csv">Descargar CSV para auditoría</button>
+      </div>
+      <div id="resumen-ciudad" class="kpis"></div>
+      <div id="ranking" class="ranking"></div>
+    </section>
+
+    <!-- MÉTODO -->
+    <section id="vista-metodo" class="vista" hidden>
+      <div class="encabezado">
+        <p class="kicker">Metodología</p>
+        <h1>Cómo se mide, para que cualquiera lo pueda revisar</h1>
+      </div>
+      <div class="tarjeta prosa">
+        <h2>1. La meta</h2>
+        <p>La Resolución CREG 101 120 de 2026 le fija a cada usuario regulado una meta: la mediana de su consumo diario en los 12 meses anteriores. Usamos la meta que trae la factura. Si no la trae, la calculamos como la mediana de los 12 promedios diarios (kWh ÷ días de cada factura).</p>
+        <h2>2. El resultado del ciclo</h2>
+        <p class="formula">% de la meta = (consumo del ciclo ÷ días del ciclo) ÷ meta diaria × 100</p>
+        <p>Comparamos por día y no por mes: así un ciclo de 29 días y uno de 33 se miden igual.</p>
+        <h2>3. La zona</h2>
+        <ul>
+          <li><b class="z-ahorro">Ahorro</b>: menos de 90 %. Recibe bono en la factura.</li>
+          <li><b class="z-segura">Zona segura</b>: de 90 % a 110 %. No paga nada extra.</li>
+          <li><b class="z-recargo">Recargo</b>: más de 110 %. Paga extra por lo que se pasó.</li>
+        </ul>
+        <h2>4. El ranking</h2>
+        <p>Se ordena por % de la meta (menos es mejor) y solo se compite contra empresas del mismo tamaño. Si empatan, gana la que ahorró más kWh. Cada empresa cuenta una vez por ciclo: su último registro.</p>
+        <h2>5. Controles</h2>
+        <ul>
+          <li>Cada registro guarda el número de factura y las fechas del periodo, para poder cotejarlo.</li>
+          <li>Se alerta si el ciclo dura menos de 20 o más de 40 días, o si el resultado queda por debajo de 40 % o por encima de 250 % de la meta (posible error de digitación).</li>
+          <li>El CSV del ranking trae los datos de entrada y los resultados: se puede recalcular en una hoja de cálculo.</li>
+          <li>El motor de cálculo (<code>js/meta.js</code>) tiene pruebas automáticas: <code>node --test</code>.</li>
+        </ul>
+        <h2>Lo que todavía no hace</h2>
+        <ul>
+          <li>No lee la factura sola: hay que digitar los datos.</li>
+          <li>No calcula el valor del bono o del recargo en pesos.</li>
+          <li>Los datos viven en este navegador. Para usarlo con empresas reales hace falta un servidor y la verificación de la factura por la Cámara.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="wrap">
+      Hackathon Barranquilla No Se Apaga · Ecofest × Fundación Código Abierto · Solo datos de muestra, no se conecta a Air-e ni a la Cámara · Código abierto MIT
+    </div>
+  </footer>
+
+  <script src="js/meta.js"></script>
+  <script src="js/datos-muestra.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
